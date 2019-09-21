@@ -1,6 +1,8 @@
 package localchannel
 
 import (
+	"errors"
+
 	"github.com/dymm/gorchestrator/pkg/messaging"
 )
 
@@ -18,8 +20,12 @@ type Queue struct {
 
 //Receive a message from the queue
 func (queue Queue) Receive() (messaging.WorkItem, error) {
-	message := <-queue.internalChannel
-	return message, nil
+	var err error
+	message, isOpened := <-queue.internalChannel
+	if isOpened == false {
+		err = errors.New("Message queue closed")
+	}
+	return message, err
 }
 
 //Send a message into the queue

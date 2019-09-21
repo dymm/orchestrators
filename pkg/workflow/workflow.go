@@ -16,13 +16,17 @@ func New(name string, validateFunc Validator, steps []Step) Workflow {
 }
 
 // SelectWorkflow return the workflow that can handle the message
-func SelectWorkflow(allWorkflows []Workflow, message messaging.WorkItem) (Workflow, error) {
-
+func SelectWorkflow(allWorkflows []Workflow, info Information) (Workflow, error) {
 	var workflow Workflow
-	for _, oneWorkflow := range allWorkflows {
-		if oneWorkflow.CanHandleTheMessage(message.GetData()) {
-			workflow = oneWorkflow
-			break
+	if info.assignedWorkflow >= 0 && info.assignedWorkflow < len(allWorkflows) {
+		workflow = allWorkflows[info.assignedWorkflow]
+	} else {
+		for index, oneWorkflow := range allWorkflows {
+			if oneWorkflow.CanHandleTheMessage(info.GetData()) {
+				workflow = oneWorkflow
+				info.assignedWorkflow = index
+				break
+			}
 		}
 	}
 	if len(workflow.Name) == 0 {
@@ -31,17 +35,12 @@ func SelectWorkflow(allWorkflows []Workflow, message messaging.WorkItem) (Workfl
 	return workflow, nil
 }
 
-// Execute start the workflow
-func Execute(theWorkflow Workflow, message messaging.WorkItem) error {
-
-	var err error
-	data := message.GetData()
-	for _, step := range theWorkflow.Steps {
-		data, err = step.Process(data)
-		if err != nil {
-			return err
-		}
+// SendToTheProcessor send the data to the processor
+// return true if the workflow is finished and an error if needed
+func SendToTheProcessor(theWorkflow Workflow, info Information) (bool, error) {
+	info.currentStep = info.currentStep + 1
+	if info.currentStep >= len(theWorkflow.Steps) {
+		return true, nil
 	}
-
-	return nil
+	return false, theWorkflow.Steps[info.currentStep].Process.Send(messaging.NewWorkItem(info))
 }

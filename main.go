@@ -9,39 +9,50 @@ import (
 )
 
 func main() {
+	allProducerAndConsumerQueues := getAllQueueOrDie()
+	allWorflows := getTheWorkflowsOrDie(allProducerAndConsumerQueues)
 
-	allWorflows := getTheWorkflowsOrDie()
-	myMessageQueue := getTheMessageQueueOrDie()
-	startTheProducer(myMessageQueue)
+	startTheProcessorsAndProducer(allProducerAndConsumerQueues)
+	myMessageQueue := allProducerAndConsumerQueues["orchestrator"]
 
 	for {
-		var selectedWorkflow workflow.Workflow
-		message, err := myMessageQueue.Receive()
+		workItem, err := myMessageQueue.Receive()
+		var workflowInfo workflow.Information
 		if err == nil {
-			selectedWorkflow, err = workflow.SelectWorkflow(allWorflows, message)
+			workflowInfo = workflow.GetInformationFromWorkItem(workItem)
 		}
+
+		var selectedWorkflow workflow.Workflow
 		if err == nil {
-			err = workflow.Execute(selectedWorkflow, message)
+			selectedWorkflow, err = workflow.SelectWorkflow(allWorflows, workflowInfo)
+		}
+
+		var finished bool
+		if err == nil {
+			finished, err = workflow.SendToTheProcessor(selectedWorkflow, workflowInfo)
 		}
 		if err != nil {
 			fmt.Println("Error while executing the workflow", err)
 			return
 		}
+		if finished {
+			fmt.Println("Workflow finished")
+		}
 	}
 }
 
-func getTheWorkflowsOrDie() []workflow.Workflow {
+func getTheWorkflowsOrDie(queues map[string]messaging.Queue) []workflow.Workflow {
 
 	return []workflow.Workflow{
 		workflow.New("Value lower than 50", returnTrueIfTheValueIsLowerThan50,
 			[]workflow.Step{
 				workflow.Step{
 					Name:    "Step 1",
-					Process: addConstToValue,
+					Process: queues["addConstToValue"],
 				},
 				workflow.Step{
 					Name:    "Step 2",
-					Process: printTheValue,
+					Process: queues["printTheValue"],
 				},
 			},
 		),
@@ -49,25 +60,34 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 			[]workflow.Step{
 				workflow.Step{
 					Name:    "Step 1",
-					Process: subConstToValue,
+					Process: queues["subConstToValue"],
 				},
 				workflow.Step{
 					Name:    "Step 2",
-					Process: subConstToValue,
+					Process: queues["subConstToValue"],
 				},
 				workflow.Step{
 					Name:    "Step 3",
-					Process: printTheValue,
+					Process: queues["printTheValue"],
 				},
 			},
 		),
 	}
 }
 
-func getTheMessageQueueOrDie() messaging.Queue {
-	return localchannel.New()
+func getAllQueueOrDie() map[string]messaging.Queue {
+	queues := make(map[string]messaging.Queue)
+	queues["orchestrator"] = localchannel.New()
+	queues["addConstToValue"] = localchannel.New()
+	queues["subConstToValue"] = localchannel.New()
+	queues["printTheValue"] = localchannel.New()
+	return queues
 }
 
-func startTheProducer(queue messaging.Queue) {
-	go createValue(queue)
+func startTheProcessorsAndProducer(queues map[string]messaging.Queue) {
+	orchestratorQueue := queues["orchestrator"]
+	go addConstToValue(queues["addConstToValue"], orchestratorQueue)
+	go subConstToValue(queues["subConstToValue"], orchestratorQueue)
+	go printTheValue(queues["printTheValue"], orchestratorQueue)
+	go createValueProducer(orchestratorQueue)
 }
