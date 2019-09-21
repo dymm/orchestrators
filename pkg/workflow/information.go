@@ -1,32 +1,25 @@
 package workflow
 
-import "github.com/dymm/gorchestrator/pkg/messaging"
+import (
+	"encoding/json"
+
+	"github.com/dymm/gorchestrator/pkg/messaging"
+)
 
 //Information about the assigned workflow
 type Information struct {
-	assignedWorkflow int
-	currentStep      int
-	data             interface{}
+	AssignedWorkflow int
+	CurrentStep      int
 }
 
-//GetData return the data
-func (info Information) GetData() interface{} {
-	return info.data
-}
+//getInformationFromWorkItem return the workflow information from a work item
+func getInformationFromWorkItem(workItem messaging.WorkItem) Information {
 
-//GetInformationFromWorkItem return the workflow information from a work item
-func GetInformationFromWorkItem(workItem messaging.WorkItem) Information {
-	info, ok := workItem.GetData().(Information)
-	if !ok {
+	var info Information
+	err := json.Unmarshal([]byte(workItem.GetValues()["workflow"]), &info)
+	if err != nil {
 		//No workflow information, it's a new incomming message
-		info = Information{assignedWorkflow: -1, currentStep: -1, data: workItem.GetData()}
+		info = Information{AssignedWorkflow: -1, CurrentStep: -1}
 	}
 	return info
-}
-
-//CreateWorkItemResponse create a new WorkItem that can be sent as a response
-func CreateWorkItemResponse(workItem messaging.WorkItem, newData interface{}) messaging.WorkItem {
-	info := GetInformationFromWorkItem(workItem)
-	info.data = newData
-	return messaging.NewWorkItem(info)
 }

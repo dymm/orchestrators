@@ -17,19 +17,15 @@ func main() {
 
 	for {
 		workItem, err := myMessageQueue.Receive()
+		var selectedWorkflow workflow.Workflow
 		var workflowInfo workflow.Information
 		if err == nil {
-			workflowInfo = workflow.GetInformationFromWorkItem(workItem)
-		}
-
-		var selectedWorkflow workflow.Workflow
-		if err == nil {
-			selectedWorkflow, err = workflow.SelectWorkflow(allWorflows, workflowInfo)
+			selectedWorkflow, workflowInfo, err = workflow.SelectWorkflow(allWorflows, workItem)
 		}
 
 		var finished bool
 		if err == nil {
-			finished, err = workflow.SendToTheProcessor(selectedWorkflow, workflowInfo)
+			finished, err = workflow.SendToTheProcessor(selectedWorkflow, workflowInfo, workItem)
 		}
 		if err != nil {
 			fmt.Println("Error while executing the workflow", err)

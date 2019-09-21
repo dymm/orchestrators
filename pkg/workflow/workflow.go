@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/dymm/gorchestrator/pkg/messaging"
@@ -16,31 +17,38 @@ func New(name string, validateFunc Validator, steps []Step) Workflow {
 }
 
 // SelectWorkflow return the workflow that can handle the message
-func SelectWorkflow(allWorkflows []Workflow, info Information) (Workflow, error) {
+func SelectWorkflow(allWorkflows []Workflow, workItem messaging.WorkItem) (Workflow, Information, error) {
+
+	info := getInformationFromWorkItem(workItem)
+
 	var workflow Workflow
-	if info.assignedWorkflow >= 0 && info.assignedWorkflow < len(allWorkflows) {
-		workflow = allWorkflows[info.assignedWorkflow]
+	if info.AssignedWorkflow >= 0 && info.AssignedWorkflow < len(allWorkflows) {
+		workflow = allWorkflows[info.AssignedWorkflow]
 	} else {
 		for index, oneWorkflow := range allWorkflows {
-			if oneWorkflow.CanHandleTheMessage(info.GetData()) {
+			if oneWorkflow.CanHandleTheMessage(workItem.GetValues()) {
 				workflow = oneWorkflow
-				info.assignedWorkflow = index
+				info.AssignedWorkflow = index
 				break
 			}
 		}
 	}
 	if len(workflow.Name) == 0 {
-		return workflow, errors.New("No workflow found for the data")
+		return workflow, info, errors.New("No workflow found for the data")
 	}
-	return workflow, nil
+	return workflow, info, nil
 }
 
 // SendToTheProcessor send the data to the processor
 // return true if the workflow is finished and an error if needed
-func SendToTheProcessor(theWorkflow Workflow, info Information) (bool, error) {
-	info.currentStep = info.currentStep + 1
-	if info.currentStep >= len(theWorkflow.Steps) {
+func SendToTheProcessor(theWorkflow Workflow, info Information, workItem messaging.WorkItem) (bool, error) {
+	info.CurrentStep = info.CurrentStep + 1
+	if info.CurrentStep >= len(theWorkflow.Steps) {
 		return true, nil
 	}
-	return false, theWorkflow.Steps[info.currentStep].Process.Send(messaging.NewWorkItem(info))
+
+	serializedWorkflowInfo, _ := json.Marshal(info)
+	values := workItem.GetValues()
+	values["workflow"] = string(serializedWorkflowInfo)
+	return false, theWorkflow.Steps[info.CurrentStep].Process.Send(messaging.NewWorkItem(values))
 }

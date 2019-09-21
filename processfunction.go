@@ -1,13 +1,14 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
 	"time"
 
 	"github.com/dymm/gorchestrator/pkg/messaging"
-	"github.com/dymm/gorchestrator/pkg/workflow"
 )
 
 type dataType struct {
@@ -15,17 +16,31 @@ type dataType struct {
 	Value int
 }
 
-func returnTrueIfTheValueIsLowerThan50(input interface{}) bool {
-	data, ok := input.(dataType)
-	if !ok {
+func deserializeDataType(values map[string]string) (dataType, error) {
+
+	serialized, found := values["data"]
+
+	var data dataType
+	if !found {
+		return data, errors.New("No data found")
+	}
+
+	err := json.Unmarshal([]byte(serialized), &data)
+	return data, err
+}
+
+func returnTrueIfTheValueIsLowerThan50(values map[string]string) bool {
+
+	data, err := deserializeDataType(values)
+	if err != nil {
 		return false
 	}
 	return data.Value < 50
 }
 
-func returnTrueIfTheValueIsGreaterOrEqualThan50(input interface{}) bool {
-	data, ok := input.(dataType)
-	if !ok {
+func returnTrueIfTheValueIsGreaterOrEqualThan50(values map[string]string) bool {
+	data, err := deserializeDataType(values)
+	if err != nil {
 		return false
 	}
 	return data.Value >= 50
@@ -41,7 +56,10 @@ func createValueProducer(outgoing messaging.Queue) {
 			Value: rand.Intn(100),
 		}
 		fmt.Printf("%s : Producing the value %d\n", newValue.Name, newValue.Value)
-		if err := outgoing.Send(messaging.NewWorkItem(newValue)); err != nil {
+		serialized, _ := json.Marshal(newValue)
+		newWorkItem := messaging.NewWorkItem(map[string]string{"data": string(serialized)})
+
+		if err := outgoing.Send(newWorkItem); err != nil {
 			fmt.Println("Error while sending the message. ", err)
 			os.Exit(0)
 		}
@@ -55,21 +73,23 @@ func addConstToValue(incoming messaging.Queue, outgoing messaging.Queue) {
 
 	for {
 		workItem, err := incoming.Receive()
+
+		var data dataType
+		if err == nil {
+			data, err = deserializeDataType(workItem.GetValues())
+		}
 		if err != nil {
 			fmt.Println("addConstToValue : error while reading the message. ", err)
 			os.Exit(0)
 		}
 
-		info := workflow.GetInformationFromWorkItem(workItem)
-		data, ok := info.GetData().(dataType)
-		if !ok {
-			fmt.Println("addConstToValue : Can't cast the input data to the rigth type")
-			os.Exit(0)
-		}
-
 		fmt.Printf("%s : Adding 1\n", data.Name)
 		data.Value = data.Value + 1
-		err = outgoing.Send(workflow.CreateWorkItemResponse(workItem, data))
+
+		serializedValue, _ := json.Marshal(data)
+		workItem.GetValues()["data"] = string(serializedValue)
+
+		err = outgoing.Send(workItem)
 		if err != nil {
 			fmt.Println("addConstToValue : error while sending the message. ", err)
 			os.Exit(0)
@@ -83,21 +103,23 @@ func subConstToValue(incoming messaging.Queue, outgoing messaging.Queue) {
 
 	for {
 		workItem, err := incoming.Receive()
+
+		var data dataType
+		if err == nil {
+			data, err = deserializeDataType(workItem.GetValues())
+		}
 		if err != nil {
 			fmt.Println("subConstToValue : error while reading the message. ", err)
 			os.Exit(0)
 		}
 
-		info := workflow.GetInformationFromWorkItem(workItem)
-		data, ok := info.GetData().(dataType)
-		if !ok {
-			fmt.Println("subConstToValue : Can't cast the input data to the rigth type")
-			os.Exit(0)
-		}
-
 		fmt.Printf("%s : Substracting 9\n", data.Name)
 		data.Value = data.Value - 9
-		err = outgoing.Send(workflow.CreateWorkItemResponse(workItem, data))
+
+		serializedValue, _ := json.Marshal(data)
+		workItem.GetValues()["data"] = string(serializedValue)
+
+		err = outgoing.Send(workItem)
 		if err != nil {
 			fmt.Println("subConstToValue : error while sending the message. ", err)
 			os.Exit(0)
@@ -111,21 +133,18 @@ func printTheValue(incoming messaging.Queue, outgoing messaging.Queue) {
 
 	for {
 		workItem, err := incoming.Receive()
+		var data dataType
+		if err == nil {
+			data, err = deserializeDataType(workItem.GetValues())
+		}
 		if err != nil {
 			fmt.Println("printTheValue : error while reading the message. ", err)
 			os.Exit(0)
 		}
 
-		info := workflow.GetInformationFromWorkItem(workItem)
-		data, ok := info.GetData().(dataType)
-		if !ok {
-			fmt.Println("printTheValue : Can't cast the input data to the rigth type")
-			os.Exit(0)
-		}
-
 		fmt.Printf("%s : value is %d\n", data.Name, data.Value)
 
-		err = outgoing.Send(workflow.CreateWorkItemResponse(workItem, data))
+		err = outgoing.Send(workItem)
 		if err != nil {
 			fmt.Println("printTheValue : error while sending the message. ", err)
 			os.Exit(0)

@@ -2,17 +2,17 @@ package messaging
 
 //WorkItem represents the data exchanged between the elements constituting the workflow
 type WorkItem struct {
-	data interface{} //Data to work with
+	data map[string]string // dictionary of JSON serialized data to work with
 }
 
 //NewWorkItem create a new message
-func NewWorkItem(value interface{}) WorkItem {
+func NewWorkItem(values map[string]string) WorkItem {
 	return WorkItem{
-		data: value,
+		data: values,
 	}
 }
 
-//GetData returns the message data
-func (message WorkItem) GetData() interface{} {
+//GetValues returns the message data
+func (message WorkItem) GetValues() map[string]string {
 	return message.data
 }

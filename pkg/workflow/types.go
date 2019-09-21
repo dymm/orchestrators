@@ -3,7 +3,7 @@ package workflow
 import "github.com/dymm/gorchestrator/pkg/messaging"
 
 //Validator is a function made for validate a workfow for a given data
-type Validator func(interface{}) bool
+type Validator func(values map[string]string) bool
 
 // Workflow is a workflow description
 type Workflow struct {
@@ -15,8 +15,8 @@ type Workflow struct {
 }
 
 //CanHandleTheMessage return true if the workflow is siuted for the data
-func (w Workflow) CanHandleTheMessage(data interface{}) bool {
-	return w.validate(data)
+func (w Workflow) CanHandleTheMessage(values map[string]string) bool {
+	return w.validate(values)
 }
 
 //Step is a processing to apply to the datas
