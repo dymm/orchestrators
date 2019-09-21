@@ -10,14 +10,18 @@ import (
 
 func main() {
 
-	myWorkflow := getTheWorkflowOrDie()
+	allWorflows := getTheWorkflowsOrDie()
 	myMessageQueue := getTheMessageQueueOrDie()
 	startTheProducer(myMessageQueue)
 
 	for {
+		var selectedWorkflow workflow.Workflow
 		message, err := myMessageQueue.Receive()
 		if err == nil {
-			err = workflow.Execute(myWorkflow, message)
+			selectedWorkflow, err = workflow.SelectWorkflow(allWorflows, message)
+		}
+		if err == nil {
+			err = workflow.Execute(selectedWorkflow, message)
 		}
 		if err != nil {
 			fmt.Println("Error while executing the workflow", err)
@@ -26,20 +30,37 @@ func main() {
 	}
 }
 
-func getTheWorkflowOrDie() workflow.Workflow {
+func getTheWorkflowsOrDie() []workflow.Workflow {
 
-	return workflow.Workflow{
-		Name: "test",
-		Steps: []workflow.Step{
-			workflow.Step{
-				Name:    "Step 1",
-				Process: addConstToValue,
+	return []workflow.Workflow{
+		workflow.New("Value lower than 50", returnTrueIfTheValueIsLowerThan50,
+			[]workflow.Step{
+				workflow.Step{
+					Name:    "Step 1",
+					Process: addConstToValue,
+				},
+				workflow.Step{
+					Name:    "Step 2",
+					Process: printTheValue,
+				},
 			},
-			workflow.Step{
-				Name:    "Step 2",
-				Process: printTheValue,
+		),
+		workflow.New("Value greater or equal than 50", returnTrueIfTheValueIsGreaterOrEqualThan50,
+			[]workflow.Step{
+				workflow.Step{
+					Name:    "Step 1",
+					Process: subConstToValue,
+				},
+				workflow.Step{
+					Name:    "Step 2",
+					Process: subConstToValue,
+				},
+				workflow.Step{
+					Name:    "Step 3",
+					Process: printTheValue,
+				},
 			},
-		},
+		),
 	}
 }
 

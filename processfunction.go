@@ -32,6 +32,22 @@ func createValue(queue messaging.Queue) {
 	}
 }
 
+func returnTrueIfTheValueIsLowerThan50(input interface{}) bool {
+	data, ok := input.(dataType)
+	if !ok {
+		return false
+	}
+	return data.Value < 50
+}
+
+func returnTrueIfTheValueIsGreaterOrEqualThan50(input interface{}) bool {
+	data, ok := input.(dataType)
+	if !ok {
+		return false
+	}
+	return data.Value >= 50
+}
+
 func addConstToValue(input interface{}) (interface{}, error) {
 	data, ok := input.(dataType)
 	if !ok {
@@ -40,6 +56,17 @@ func addConstToValue(input interface{}) (interface{}, error) {
 
 	fmt.Printf("%s : Adding 1\n", data.Name)
 	data.Value = data.Value + 1
+	return data, nil
+}
+
+func subConstToValue(input interface{}) (interface{}, error) {
+	data, ok := input.(dataType)
+	if !ok {
+		return nil, errors.New("Can't cast the input data to the rigth type")
+	}
+
+	fmt.Printf("%s : Substracting 9\n", data.Name)
+	data.Value = data.Value - 9
 	return data, nil
 }
 
