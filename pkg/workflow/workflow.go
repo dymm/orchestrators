@@ -41,7 +41,7 @@ func SelectWorkflow(allWorkflows []Workflow, workItem messaging.WorkItem) (Workf
 
 // SendToTheProcessor send the data to the processor
 // return true if the workflow is finished and an error if needed
-func SendToTheProcessor(theWorkflow Workflow, info Information, workItem messaging.WorkItem) (bool, error) {
+func SendToTheProcessor(queue messaging.Queue, theWorkflow Workflow, info Information, workItem messaging.WorkItem) (bool, error) {
 	info.CurrentStep = info.CurrentStep + 1
 	if info.CurrentStep >= len(theWorkflow.Steps) {
 		return true, nil
@@ -50,5 +50,5 @@ func SendToTheProcessor(theWorkflow Workflow, info Information, workItem messagi
 	serializedWorkflowInfo, _ := json.Marshal(info)
 	values := workItem.GetValues()
 	values["workflow"] = string(serializedWorkflowInfo)
-	return false, theWorkflow.Steps[info.CurrentStep].Process.Send(messaging.NewWorkItem(values))
+	return false, queue.Send(theWorkflow.Steps[info.CurrentStep].Process, messaging.NewWorkItem(values))
 }

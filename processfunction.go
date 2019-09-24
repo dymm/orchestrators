@@ -46,7 +46,7 @@ func returnTrueIfTheValueIsGreaterOrEqualThan50(values map[string]string) bool {
 	return data.Value >= 50
 }
 
-func createValueProducer(outgoing messaging.Queue) {
+func createValueProducer(queue messaging.Queue, outgoing string) {
 	time.Sleep(3 * time.Second)
 	counter := 0
 	for {
@@ -59,20 +59,20 @@ func createValueProducer(outgoing messaging.Queue) {
 		serialized, _ := json.Marshal(newValue)
 		newWorkItem := messaging.NewWorkItem(map[string]string{"data": string(serialized)})
 
-		if err := outgoing.Send(newWorkItem); err != nil {
+		if err := queue.Send(outgoing, newWorkItem); err != nil {
 			fmt.Println("Error while sending the message. ", err)
 			os.Exit(0)
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
-func addConstToValue(incoming messaging.Queue, outgoing messaging.Queue) {
+func addConstToValue(queue messaging.Queue, outgoing string) {
 	fmt.Println(("Starting addConstToValue"))
 	defer fmt.Println(("Stoping addConstToValue"))
 
 	for {
-		workItem, err := incoming.Receive()
+		workItem, err := queue.Receive()
 
 		var data dataType
 		if err == nil {
@@ -89,7 +89,7 @@ func addConstToValue(incoming messaging.Queue, outgoing messaging.Queue) {
 		serializedValue, _ := json.Marshal(data)
 		workItem.GetValues()["data"] = string(serializedValue)
 
-		err = outgoing.Send(workItem)
+		err = queue.Send(outgoing, workItem)
 		if err != nil {
 			fmt.Println("addConstToValue : error while sending the message. ", err)
 			os.Exit(0)
@@ -97,12 +97,12 @@ func addConstToValue(incoming messaging.Queue, outgoing messaging.Queue) {
 	}
 }
 
-func subConstToValue(incoming messaging.Queue, outgoing messaging.Queue) {
+func subConstToValue(queue messaging.Queue, outgoing string) {
 	fmt.Println(("Starting subConstToValue"))
 	defer fmt.Println(("Stoping subConstToValue"))
 
 	for {
-		workItem, err := incoming.Receive()
+		workItem, err := queue.Receive()
 
 		var data dataType
 		if err == nil {
@@ -119,7 +119,7 @@ func subConstToValue(incoming messaging.Queue, outgoing messaging.Queue) {
 		serializedValue, _ := json.Marshal(data)
 		workItem.GetValues()["data"] = string(serializedValue)
 
-		err = outgoing.Send(workItem)
+		err = queue.Send(outgoing, workItem)
 		if err != nil {
 			fmt.Println("subConstToValue : error while sending the message. ", err)
 			os.Exit(0)
@@ -127,12 +127,12 @@ func subConstToValue(incoming messaging.Queue, outgoing messaging.Queue) {
 	}
 }
 
-func printTheValue(incoming messaging.Queue, outgoing messaging.Queue) {
+func printTheValue(queue messaging.Queue, outgoing string) {
 	fmt.Println(("Starting printTheValue"))
 	defer fmt.Println(("Stoping printTheValue"))
 
 	for {
-		workItem, err := incoming.Receive()
+		workItem, err := queue.Receive()
 		var data dataType
 		if err == nil {
 			data, err = deserializeDataType(workItem.GetValues())
@@ -144,7 +144,7 @@ func printTheValue(incoming messaging.Queue, outgoing messaging.Queue) {
 
 		fmt.Printf("%s : value is %d\n", data.Name, data.Value)
 
-		err = outgoing.Send(workItem)
+		err = queue.Send(outgoing, workItem)
 		if err != nil {
 			fmt.Println("printTheValue : error while sending the message. ", err)
 			os.Exit(0)

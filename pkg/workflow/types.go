@@ -1,7 +1,5 @@
 package workflow
 
-import "github.com/dymm/gorchestrator/pkg/messaging"
-
 //Validator is a function made for validate a workfow for a given data
 type Validator func(values map[string]string) bool
 
@@ -23,6 +21,6 @@ func (w Workflow) CanHandleTheMessage(values map[string]string) bool {
 type Step struct {
 	//Name of the step
 	Name string
-	//Process is a message queue communicating with a processor
-	Process messaging.Queue
+	//Process is a message queue name to a processor
+	Process string
 }
