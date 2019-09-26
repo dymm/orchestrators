@@ -75,11 +75,11 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 
 func getAllQueueOrDie() map[string]messaging.Queue {
 	queues := make(map[string]messaging.Queue)
-	queues["orchestrator"] = createMessageQueueOrDie("orchestrator")
-	queues["addConstToValue"] = createMessageQueueOrDie("addConstToValue")
-	queues["subConstToValue"] = createMessageQueueOrDie("subConstToValue")
-	queues["printTheValue"] = createMessageQueueOrDie("printTheValue")
-	queues["producer"] = createMessageQueueOrDie("producer")
+	queues["orchestrator"] = createMessageQueueOrDie("orchestrator", queues)
+	queues["addConstToValue"] = createMessageQueueOrDie("addConstToValue", queues)
+	queues["subConstToValue"] = createMessageQueueOrDie("subConstToValue", queues)
+	queues["printTheValue"] = createMessageQueueOrDie("printTheValue", queues)
+	queues["producer"] = createMessageQueueOrDie("producer", queues)
 	return queues
 }
 

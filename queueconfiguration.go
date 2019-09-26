@@ -7,10 +7,24 @@ import (
 	"time"
 
 	"github.com/dymm/gorchestrator/pkg/messaging"
+	"github.com/dymm/gorchestrator/pkg/messaging/localchannel"
 	"github.com/dymm/gorchestrator/pkg/messaging/rabbitmq"
 )
 
-func createMessageQueueOrDie(receiveQueueName string) messaging.Queue {
+func createMessageQueueOrDie(receiveQueueName string, avaliableQueues map[string]messaging.Queue) messaging.Queue {
+
+	_, present := os.LookupEnv("RABBITMQ_ADDR")
+	if present {
+		return createRabbitMQMessageQueueOrDie(receiveQueueName)
+	}
+	return createLocalMessageQueueOrDie(receiveQueueName, avaliableQueues)
+}
+
+func createLocalMessageQueueOrDie(receiveQueueName string, avaliableQueues map[string]messaging.Queue) messaging.Queue {
+	return localchannel.New(receiveQueueName, avaliableQueues)
+}
+
+func createRabbitMQMessageQueueOrDie(receiveQueueName string) messaging.Queue {
 	config := getChannelConfigurationFromEnvOrDie(receiveQueueName)
 	queue, err := rabbitmq.New(config)
 	if err != nil {

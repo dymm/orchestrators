@@ -2,20 +2,25 @@ package localchannel
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/dymm/gorchestrator/pkg/messaging"
 )
 
 //New return a local channel queue
-func New() messaging.Queue {
+func New(name string, avaliableQueues map[string]messaging.Queue) messaging.Queue {
 	return Queue{
-		internalChannel: make(chan messaging.WorkItem),
+		name:             name,
+		internalChannel:  make(chan messaging.WorkItem, 2),
+		accessibleQueues: avaliableQueues,
 	}
 }
 
 //Queue which can send and receive message
 type Queue struct {
-	internalChannel chan messaging.WorkItem
+	name             string
+	internalChannel  chan messaging.WorkItem
+	accessibleQueues map[string]messaging.Queue
 }
 
 //Receive a message from the queue
@@ -29,7 +34,15 @@ func (queue Queue) Receive() (messaging.WorkItem, error) {
 }
 
 //Send a message into the queue
-func (queue Queue) Send(message messaging.WorkItem) error {
-	queue.internalChannel <- message
-	return nil
+func (queue Queue) Send(destination string, message messaging.WorkItem) error {
+	if destination == queue.name {
+		queue.internalChannel <- message
+		return nil
+	}
+
+	destQueue, found := queue.accessibleQueues[destination]
+	if found == false {
+		return fmt.Errorf("No queue '%s' accessible from '%s'", destination, queue.name)
+	}
+	return destQueue.Send(destination, message)
 }

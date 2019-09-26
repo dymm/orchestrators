@@ -14,7 +14,9 @@ func New(config ChannelConfig) (queue messaging.Queue, err error) {
 	connexion, err = amqp.Dial(config.Address)
 
 	var amqpChannel *amqp.Channel
-	amqpChannel, err = connexion.Channel()
+	if err == nil {
+		amqpChannel, err = connexion.Channel()
+	}
 	if err != nil {
 		return queue, errors.New("Input channel error. " + err.Error())
 	}

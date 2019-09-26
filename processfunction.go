@@ -29,23 +29,6 @@ func deserializeDataType(values map[string]string) (dataType, error) {
 	return data, err
 }
 
-func returnTrueIfTheValueIsLowerThan50(values map[string]string) bool {
-
-	data, err := deserializeDataType(values)
-	if err != nil {
-		return false
-	}
-	return data.Value < 50
-}
-
-func returnTrueIfTheValueIsGreaterOrEqualThan50(values map[string]string) bool {
-	data, err := deserializeDataType(values)
-	if err != nil {
-		return false
-	}
-	return data.Value >= 50
-}
-
 func createValueProducer(queue messaging.Queue, outgoing string) {
 	time.Sleep(3 * time.Second)
 	counter := 0
@@ -63,7 +46,7 @@ func createValueProducer(queue messaging.Queue, outgoing string) {
 			fmt.Println("Error while sending the message. ", err)
 			os.Exit(0)
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
