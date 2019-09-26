@@ -8,10 +8,10 @@ import (
 )
 
 //New return a new workflow
-func New(name string, validateFunc Validator, steps []Step) Workflow {
+func New(name string, validator Validator, steps []Step) Workflow {
 	return Workflow{
 		Name:     name,
-		validate: validateFunc,
+		validate: validator,
 		Steps:    steps,
 	}
 }

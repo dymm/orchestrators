@@ -40,7 +40,8 @@ func main() {
 func getTheWorkflowsOrDie() []workflow.Workflow {
 
 	return []workflow.Workflow{
-		workflow.New("Value lower than 50", returnTrueIfTheValueIsLowerThan50,
+		workflow.New("Value lower than 50",
+			workflow.Validator{Value: "data.Value", Regex: `^(\d|[0-5]\d?)$`}, //50 or less
 			[]workflow.Step{
 				workflow.Step{
 					Name:    "Step 1",
@@ -52,7 +53,8 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 				},
 			},
 		),
-		workflow.New("Value greater or equal than 50", returnTrueIfTheValueIsGreaterOrEqualThan50,
+		workflow.New("Value greater or equal than 50",
+			workflow.Validator{Value: "data.Value", Regex: `^([6-9]\d|\d{3,})$`}, //Greater than 50,
 			[]workflow.Step{
 				workflow.Step{
 					Name:    "Step 1",
