@@ -32,7 +32,7 @@ func main() {
 			return
 		}
 		if finished {
-			fmt.Println("Workflow finished")
+			fmt.Printf("Workflow '%d' finished\n", workflowInfo.AssignedWorkflow)
 		}
 	}
 }
@@ -42,31 +42,43 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 	return []workflow.Workflow{
 		workflow.New("Value lower than 50",
 			workflow.Validator{Value: "data.Value", Regex: `^(\d|[0-5]\d?)$`}, //50 or less
-			[]workflow.Step{
-				workflow.Step{
-					Name:    "Step 1",
-					Process: "addConstToValue",
+			"Step 1",
+			map[string]workflow.Step{
+				"Step 1": workflow.Step{
+					Process:   "subConstToValue",
+					OnSuccess: "Step 2",
+					OnError:   "Dump",
 				},
-				workflow.Step{
-					Name:    "Step 2",
+				"Step 2": workflow.Step{
 					Process: "printTheValue",
+				},
+				"Step 3": workflow.Step{
+					Process: "dumpTheValue",
+				},
+				"Dump": workflow.Step{
+					Process: "dumpTheValue",
 				},
 			},
 		),
 		workflow.New("Value greater or equal than 50",
 			workflow.Validator{Value: "data.Value", Regex: `^([6-9]\d|\d{3,})$`}, //Greater than 50,
-			[]workflow.Step{
-				workflow.Step{
-					Name:    "Step 1",
-					Process: "subConstToValue",
+			"Step 1",
+			map[string]workflow.Step{
+				"Step 1": workflow.Step{
+					Process:   "addConstToValue",
+					OnSuccess: "Step 2",
+					OnError:   "Dump",
 				},
-				workflow.Step{
-					Name:    "Step 2",
-					Process: "subConstToValue",
+				"Step 2": workflow.Step{
+					Process:   "addConstToValue",
+					OnSuccess: "Step 3",
+					OnError:   "Dump",
 				},
-				workflow.Step{
-					Name:    "Step 3",
+				"Step 3": workflow.Step{
 					Process: "printTheValue",
+				},
+				"Dump": workflow.Step{
+					Process: "dumpTheValue",
 				},
 			},
 		),
@@ -79,14 +91,16 @@ func getAllQueueOrDie() map[string]messaging.Queue {
 	queues["addConstToValue"] = createMessageQueueOrDie("addConstToValue", queues)
 	queues["subConstToValue"] = createMessageQueueOrDie("subConstToValue", queues)
 	queues["printTheValue"] = createMessageQueueOrDie("printTheValue", queues)
+	queues["dumpTheValue"] = createMessageQueueOrDie("dumpTheValue", queues)
 	queues["producer"] = createMessageQueueOrDie("producer", queues)
 	return queues
 }
 
 func startTheProcessorsAndProducer(queues map[string]messaging.Queue) {
 	orchestratorQ := "orchestrator"
-	go addConstToValue(queues["addConstToValue"], orchestratorQ)
-	go subConstToValue(queues["subConstToValue"], orchestratorQ)
+	go addConstToValue(queues["addConstToValue"], orchestratorQ, 23)
+	go subConstToValue(queues["subConstToValue"], orchestratorQ, 14)
 	go printTheValue(queues["printTheValue"], orchestratorQ)
+	go dumpTheValue(queues["dumpTheValue"], orchestratorQ)
 	go createValueProducer(queues["producer"], orchestratorQ)
 }

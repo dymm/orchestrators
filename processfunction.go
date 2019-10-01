@@ -50,7 +50,7 @@ func createValueProducer(queue messaging.Queue, outgoing string) {
 	}
 }
 
-func addConstToValue(queue messaging.Queue, outgoing string) {
+func addConstToValue(queue messaging.Queue, outgoing string, valueToAdd int) {
 	fmt.Println(("Starting addConstToValue"))
 	defer fmt.Println(("Stoping addConstToValue"))
 
@@ -66,11 +66,15 @@ func addConstToValue(queue messaging.Queue, outgoing string) {
 			os.Exit(0)
 		}
 
-		fmt.Printf("%s : Adding 1\n", data.Name)
-		data.Value = data.Value + 1
+		fmt.Printf("%s : Adding %d\n", data.Name, valueToAdd)
+		data.Value = data.Value + valueToAdd
 
 		serializedValue, _ := json.Marshal(data)
 		workItem.GetValues()["data"] = string(serializedValue)
+
+		if data.Value >= 100 {
+			workItem.GetValues()["error"] = string(`{"message":"The value is too high"}`)
+		}
 
 		err = queue.Send(outgoing, workItem)
 		if err != nil {
@@ -80,7 +84,7 @@ func addConstToValue(queue messaging.Queue, outgoing string) {
 	}
 }
 
-func subConstToValue(queue messaging.Queue, outgoing string) {
+func subConstToValue(queue messaging.Queue, outgoing string, valueToSub int) {
 	fmt.Println(("Starting subConstToValue"))
 	defer fmt.Println(("Stoping subConstToValue"))
 
@@ -96,8 +100,12 @@ func subConstToValue(queue messaging.Queue, outgoing string) {
 			os.Exit(0)
 		}
 
-		fmt.Printf("%s : Substracting 9\n", data.Name)
-		data.Value = data.Value - 9
+		fmt.Printf("%s : Substracting %d\n", data.Name, valueToSub)
+		data.Value = data.Value - valueToSub
+
+		if data.Value <= 0 {
+			workItem.GetValues()["error"] = string(`{"message":"The value is too low"}`)
+		}
 
 		serializedValue, _ := json.Marshal(data)
 		workItem.GetValues()["data"] = string(serializedValue)
@@ -130,6 +138,31 @@ func printTheValue(queue messaging.Queue, outgoing string) {
 		err = queue.Send(outgoing, workItem)
 		if err != nil {
 			fmt.Println("printTheValue : error while sending the message. ", err)
+			os.Exit(0)
+		}
+	}
+}
+
+func dumpTheValue(queue messaging.Queue, outgoing string) {
+	fmt.Println(("Starting dumpTheValue"))
+	defer fmt.Println(("Stoping dumpTheValue"))
+
+	for {
+		workItem, err := queue.Receive()
+		var data dataType
+		if err == nil {
+			data, err = deserializeDataType(workItem.GetValues())
+		}
+		if err != nil {
+			fmt.Println("dumpTheValue : error while reading the message. ", err)
+			os.Exit(0)
+		}
+
+		fmt.Printf("%s : dump the value %d\n", data.Name, data.Value)
+
+		err = queue.Send(outgoing, workItem)
+		if err != nil {
+			fmt.Println("dumpTheValue : error while sending the message. ", err)
 			os.Exit(0)
 		}
 	}

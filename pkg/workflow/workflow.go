@@ -8,11 +8,12 @@ import (
 )
 
 //New return a new workflow
-func New(name string, validator Validator, steps []Step) Workflow {
+func New(name string, validator Validator, firstStep string, steps map[string]Step) Workflow {
 	return Workflow{
-		Name:     name,
-		validate: validator,
-		Steps:    steps,
+		Name:      name,
+		validate:  validator,
+		FirstStep: firstStep,
+		Steps:     steps,
 	}
 }
 
@@ -42,13 +43,43 @@ func SelectWorkflow(allWorkflows []Workflow, workItem messaging.WorkItem) (Workf
 // SendToTheProcessor send the data to the processor
 // return true if the workflow is finished and an error if needed
 func SendToTheProcessor(queue messaging.Queue, theWorkflow Workflow, info Information, workItem messaging.WorkItem) (bool, error) {
-	info.CurrentStep = info.CurrentStep + 1
-	if info.CurrentStep >= len(theWorkflow.Steps) {
-		return true, nil
+
+	//Get the current step if the workflow is already running
+	var currentStep Step
+	currentFound := true
+	if info.CurrentStep != "" {
+		currentStep, currentFound = theWorkflow.Steps[info.CurrentStep]
+
+	} else {
+		currentStep.OnSuccess = theWorkflow.FirstStep //Set the first step for the workflow
+	}
+	if currentFound == false {
+		return true, errors.New("No step '" + info.CurrentStep + "' found")
 	}
 
+	//Get the step name to execute now
+	var nextStepName string
+	if _, errorPresent := workItem.GetValues()["error"]; errorPresent {
+		delete(workItem.GetValues(), "error") //Do not forward the error to the next step
+		nextStepName = currentStep.OnError
+	} else {
+		nextStepName = currentStep.OnSuccess
+	}
+
+	if nextStepName == "" {
+		return true, nil //No next step defined, the workflow is finished
+	}
+
+	//Get the step to execute now
+	nextStep, nextFound := theWorkflow.Steps[nextStepName]
+	if nextFound == false {
+		return true, errors.New("No step '" + nextStepName + "' found")
+	}
+
+	//Send to the process
+	info.CurrentStep = nextStepName
 	serializedWorkflowInfo, _ := json.Marshal(info)
 	values := workItem.GetValues()
 	values["workflow"] = string(serializedWorkflowInfo)
-	return false, queue.Send(theWorkflow.Steps[info.CurrentStep].Process, messaging.NewWorkItem(values))
+	return false, queue.Send(nextStep.Process, messaging.NewWorkItem(values))
 }

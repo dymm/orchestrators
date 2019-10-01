@@ -18,23 +18,23 @@ func Test_getInformationFromWorkItem(t *testing.T) {
 	}{
 		{
 			name: "Test with all needed informations",
-			args: args{workItem: messaging.NewWorkItem(map[string]string{"workflow": `{"AssignedWorkflow":1, "CurrentStep":2}`})},
-			want: Information{AssignedWorkflow: 1, CurrentStep: 2},
+			args: args{workItem: messaging.NewWorkItem(map[string]string{"workflow": `{"AssignedWorkflow":1, "CurrentStep":"second"}`})},
+			want: Information{AssignedWorkflow: 1, CurrentStep: "second"},
 		},
 		{
 			name: "Test with missing informations",
 			args: args{workItem: messaging.NewWorkItem(map[string]string{"workflow": `{"AssignedWorkflow":1`})},
-			want: Information{AssignedWorkflow: -1, CurrentStep: -1},
+			want: Information{AssignedWorkflow: -1, CurrentStep: ""},
 		},
 		{
 			name: "Test with false informations",
-			args: args{workItem: messaging.NewWorkItem(map[string]string{"workflow": `{"AssignedWorkflow":-10, "CurrentStep":2`})},
-			want: Information{AssignedWorkflow: -1, CurrentStep: -1},
+			args: args{workItem: messaging.NewWorkItem(map[string]string{"workflow": `{"AssignedWorkflow":-10, "CurrentStep":"second"`})},
+			want: Information{AssignedWorkflow: -1, CurrentStep: ""},
 		},
 		{
 			name: "Test without informations",
 			args: args{workItem: messaging.NewWorkItem(map[string]string{"workflow": `??`})},
-			want: Information{AssignedWorkflow: -1, CurrentStep: -1},
+			want: Information{AssignedWorkflow: -1, CurrentStep: ""},
 		},
 	}
 	for _, tt := range tests {

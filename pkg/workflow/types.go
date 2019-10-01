@@ -13,8 +13,10 @@ type Workflow struct {
 	//Name of the workflow
 	Name     string
 	validate Validator
+	//The first step too be executed
+	FirstStep string
 	//Steps to be executed
-	Steps []Step
+	Steps map[string]Step
 }
 
 //CanHandleTheMessage return true if the workflow is siuted for the data
@@ -34,8 +36,10 @@ func (w Workflow) CanHandleTheMessage(values map[string]string) bool {
 
 //Step is a processing to apply to the datas
 type Step struct {
-	//Name of the step
-	Name string
 	//Process is a message queue name to a processor
 	Process string
+	//Execute the specified step on success
+	OnSuccess string
+	//Execute the specified step on error
+	OnError string
 }
