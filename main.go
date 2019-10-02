@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dymm/gorchestrator/pkg/messaging"
 	"github.com/dymm/gorchestrator/pkg/workflow"
@@ -15,24 +17,31 @@ func main() {
 
 	allWorflows := getTheWorkflowsOrDie()
 
+	workflow.StartSessionTimeoutChecking(2, myMessageQueue, "orchestrator")
+
 	for {
 		workItem, err := myMessageQueue.Receive()
 		var selectedWorkflow workflow.Workflow
-		var workflowInfo workflow.Information
+		var workflowSession *workflow.Session
 		if err == nil {
-			selectedWorkflow, workflowInfo, err = workflow.SelectWorkflow(allWorflows, workItem)
+			selectedWorkflow, workflowSession, err = workflow.GetTheWorkflowAndSession(allWorflows, workItem)
 		}
 
 		var finished bool
+		if err == nil && workflowSession.Timeouted {
+			err = errors.New("The workflow reach the timeout")
+		}
+
 		if err == nil {
-			finished, err = workflow.SendToTheProcessor(myMessageQueue, selectedWorkflow, workflowInfo, workItem)
+			finished, err = workflow.SendToTheProcessor(myMessageQueue, selectedWorkflow, workflowSession, workItem)
 		}
 		if err != nil {
-			fmt.Println("Error while executing the workflow", err)
-			return
+			fmt.Printf("Error while executing the workflow %d. %s\n", workflowSession.Key, err)
+			finished = true
 		}
 		if finished {
-			fmt.Printf("Workflow '%d' finished\n", workflowInfo.AssignedWorkflow)
+			fmt.Printf("Workflow '%d' finished in %d ms\n", workflowSession.Key, time.Now().Sub(workflowSession.Started).Milliseconds())
+			workflow.DeleteSession(workflowSession)
 		}
 	}
 }
@@ -98,7 +107,7 @@ func getAllQueueOrDie() map[string]messaging.Queue {
 
 func startTheProcessorsAndProducer(queues map[string]messaging.Queue) {
 	orchestratorQ := "orchestrator"
-	go addConstToValue(queues["addConstToValue"], orchestratorQ, 23)
+	go addConstToValue(queues["addConstToValue"], orchestratorQ, 10)
 	go subConstToValue(queues["subConstToValue"], orchestratorQ, 14)
 	go printTheValue(queues["printTheValue"], orchestratorQ)
 	go dumpTheValue(queues["dumpTheValue"], orchestratorQ)

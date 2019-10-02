@@ -66,14 +66,16 @@ func addConstToValue(queue messaging.Queue, outgoing string, valueToAdd int) {
 			os.Exit(0)
 		}
 
-		fmt.Printf("%s : Adding %d\n", data.Name, valueToAdd)
 		data.Value = data.Value + valueToAdd
-
 		serializedValue, _ := json.Marshal(data)
 		workItem.GetValues()["data"] = string(serializedValue)
 
 		if data.Value >= 100 {
-			workItem.GetValues()["error"] = string(`{"message":"The value is too high"}`)
+			workItem.GetValues()["error"] = `{"message":"The value is too high"}`
+		}
+		if data.Value >= 0 && data.Value <= 100 {
+			fmt.Println("addConstToValue : loosing the value. ")
+			continue //Lose the message for a timeout
 		}
 
 		err = queue.Send(outgoing, workItem)
@@ -100,9 +102,7 @@ func subConstToValue(queue messaging.Queue, outgoing string, valueToSub int) {
 			os.Exit(0)
 		}
 
-		fmt.Printf("%s : Substracting %d\n", data.Name, valueToSub)
 		data.Value = data.Value - valueToSub
-
 		if data.Value <= 0 {
 			workItem.GetValues()["error"] = string(`{"message":"The value is too low"}`)
 		}
