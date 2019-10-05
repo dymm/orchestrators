@@ -42,4 +42,6 @@ type Step struct {
 	OnSuccess string
 	//Execute the specified step on error
 	OnError string
+	//Timeout in second
+	Timeout uint
 }

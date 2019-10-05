@@ -46,7 +46,11 @@ func createValueProducer(queue messaging.Queue, outgoing string) {
 			fmt.Println("Error while sending the message. ", err)
 			os.Exit(0)
 		}
-		time.Sleep(100 * time.Millisecond)
+		if counter%222 == 0 {
+			time.Sleep(30 * time.Second)
+		} else {
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 }
 
@@ -70,11 +74,8 @@ func addConstToValue(queue messaging.Queue, outgoing string, valueToAdd int) {
 		serializedValue, _ := json.Marshal(data)
 		workItem.GetValues()["data"] = string(serializedValue)
 
-		if data.Value >= 100 {
-			workItem.GetValues()["error"] = `{"message":"The value is too high"}`
-		}
 		if data.Value >= 0 && data.Value <= 100 {
-			fmt.Println("addConstToValue : loosing the value. ")
+			fmt.Printf("%s addConstToValue : loosing the value\n", data.Name)
 			continue //Lose the message for a timeout
 		}
 
@@ -103,10 +104,6 @@ func subConstToValue(queue messaging.Queue, outgoing string, valueToSub int) {
 		}
 
 		data.Value = data.Value - valueToSub
-		if data.Value <= 0 {
-			workItem.GetValues()["error"] = string(`{"message":"The value is too low"}`)
-		}
-
 		serializedValue, _ := json.Marshal(data)
 		workItem.GetValues()["data"] = string(serializedValue)
 
@@ -143,9 +140,9 @@ func printTheValue(queue messaging.Queue, outgoing string) {
 	}
 }
 
-func dumpTheValue(queue messaging.Queue, outgoing string) {
-	fmt.Println(("Starting dumpTheValue"))
-	defer fmt.Println(("Stoping dumpTheValue"))
+func handleError(queue messaging.Queue, outgoing string) {
+	fmt.Println(("Starting handleError"))
+	defer fmt.Println(("Stoping handleError"))
 
 	for {
 		workItem, err := queue.Receive()
@@ -154,15 +151,14 @@ func dumpTheValue(queue messaging.Queue, outgoing string) {
 			data, err = deserializeDataType(workItem.GetValues())
 		}
 		if err != nil {
-			fmt.Println("dumpTheValue : error while reading the message. ", err)
-			os.Exit(0)
+			fmt.Println("handleError : error while reading the message. ", err)
+		} else {
+			fmt.Printf("%s : An error occured -> %v\n", data.Name, workItem.GetValues()["error"])
 		}
-
-		fmt.Printf("%s : dump the value %d\n", data.Name, data.Value)
 
 		err = queue.Send(outgoing, workItem)
 		if err != nil {
-			fmt.Println("dumpTheValue : error while sending the message. ", err)
+			fmt.Println("handleError : error while sending the message. ", err)
 			os.Exit(0)
 		}
 	}

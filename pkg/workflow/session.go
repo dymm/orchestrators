@@ -12,10 +12,17 @@ import (
 //Session about the assigned workflow
 type Session struct {
 	Key              uint64
-	Started          time.Time
 	assignedWorkflow int
-	currentStep      string
-	Timeouted        bool
+	CurrentStep      StepInformation
+}
+
+//StepInformation information about the current step
+type StepInformation struct {
+	Name        string
+	Process     string
+	Started     time.Time
+	TimeoutTime time.Time
+	Workitem    messaging.WorkItem
 }
 
 var sessionListMutex sync.Mutex
@@ -50,7 +57,7 @@ func createNewSession() *Session {
 	defer sessionListMutex.Unlock()
 
 	uniqueKey = uniqueKey + 1
-	session := Session{Key: uniqueKey, Started: time.Now(), assignedWorkflow: -1, currentStep: ""}
+	session := Session{Key: uniqueKey, assignedWorkflow: -1, CurrentStep: StepInformation{}}
 	sessionList[uniqueKey] = &session
 
 	fmt.Printf("Create session %d\n", session.Key)
@@ -75,4 +82,13 @@ func DeleteSession(session *Session) {
 
 	delete(sessionList, session.Key)
 	fmt.Printf("Delete session %d\n", session.Key)
+}
+
+func setStepInformationInSession(session *Session, step Step, workitem messaging.WorkItem) {
+	session.CurrentStep.Process = step.Process
+	session.CurrentStep.Started = time.Now()
+	session.CurrentStep.Workitem = workitem
+	if step.Timeout > 0 {
+		session.CurrentStep.TimeoutTime = session.CurrentStep.Started.Add(time.Duration(step.Timeout) * time.Second)
+	}
 }

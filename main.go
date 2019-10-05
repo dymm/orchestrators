@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +16,7 @@ func main() {
 
 	allWorflows := getTheWorkflowsOrDie()
 
-	workflow.StartSessionTimeoutChecking(2, myMessageQueue, "orchestrator")
+	workflow.StartSessionTimeoutChecking(myMessageQueue, "orchestrator")
 
 	for {
 		workItem, err := myMessageQueue.Receive()
@@ -28,19 +27,15 @@ func main() {
 		}
 
 		var finished bool
-		if err == nil && workflowSession.Timeouted {
-			err = errors.New("The workflow reach the timeout")
-		}
-
 		if err == nil {
-			finished, err = workflow.SendToTheProcessor(myMessageQueue, selectedWorkflow, workflowSession, workItem)
+			finished, err = workflow.SendToTheNextProcessor(myMessageQueue, selectedWorkflow, workflowSession, workItem)
 		}
 		if err != nil {
 			fmt.Printf("Error while executing the workflow %d. %s\n", workflowSession.Key, err)
 			finished = true
 		}
 		if finished {
-			fmt.Printf("Workflow '%d' finished in %d ms\n", workflowSession.Key, time.Now().Sub(workflowSession.Started).Milliseconds())
+			fmt.Printf("Workflow '%d' finished in %d ms\n", workflowSession.Key, time.Now().Sub(workflowSession.CurrentStep.Started).Milliseconds())
 			workflow.DeleteSession(workflowSession)
 		}
 	}
@@ -57,15 +52,13 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 					Process:   "subConstToValue",
 					OnSuccess: "Step 2",
 					OnError:   "Dump",
+					Timeout:   2,
 				},
 				"Step 2": workflow.Step{
 					Process: "printTheValue",
 				},
-				"Step 3": workflow.Step{
-					Process: "dumpTheValue",
-				},
 				"Dump": workflow.Step{
-					Process: "dumpTheValue",
+					Process: "handleError",
 				},
 			},
 		),
@@ -77,17 +70,19 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 					Process:   "addConstToValue",
 					OnSuccess: "Step 2",
 					OnError:   "Dump",
+					Timeout:   2,
 				},
 				"Step 2": workflow.Step{
 					Process:   "addConstToValue",
 					OnSuccess: "Step 3",
 					OnError:   "Dump",
+					Timeout:   2,
 				},
 				"Step 3": workflow.Step{
 					Process: "printTheValue",
 				},
 				"Dump": workflow.Step{
-					Process: "dumpTheValue",
+					Process: "handleError",
 				},
 			},
 		),
@@ -100,16 +95,18 @@ func getAllQueueOrDie() map[string]messaging.Queue {
 	queues["addConstToValue"] = createMessageQueueOrDie("addConstToValue", queues)
 	queues["subConstToValue"] = createMessageQueueOrDie("subConstToValue", queues)
 	queues["printTheValue"] = createMessageQueueOrDie("printTheValue", queues)
-	queues["dumpTheValue"] = createMessageQueueOrDie("dumpTheValue", queues)
+	queues["handleError"] = createMessageQueueOrDie("handleError", queues)
 	queues["producer"] = createMessageQueueOrDie("producer", queues)
 	return queues
 }
 
 func startTheProcessorsAndProducer(queues map[string]messaging.Queue) {
 	orchestratorQ := "orchestrator"
-	go addConstToValue(queues["addConstToValue"], orchestratorQ, 10)
-	go subConstToValue(queues["subConstToValue"], orchestratorQ, 14)
-	go printTheValue(queues["printTheValue"], orchestratorQ)
-	go dumpTheValue(queues["dumpTheValue"], orchestratorQ)
+	for i := 0; i < 3; i++ {
+		go addConstToValue(queues["addConstToValue"], orchestratorQ, 10)
+		go subConstToValue(queues["subConstToValue"], orchestratorQ, 14)
+		go printTheValue(queues["printTheValue"], orchestratorQ)
+		go handleError(queues["handleError"], orchestratorQ)
+	}
 	go createValueProducer(queues["producer"], orchestratorQ)
 }

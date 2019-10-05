@@ -11,11 +11,11 @@ func Test_getSessionStoredInTheWorkItem(t *testing.T) {
 
 	session1 := createNewSession()
 	session1.assignedWorkflow = 1
-	session1.currentStep = "first"
+	session1.CurrentStep.Name = "first"
 
 	session2 := createNewSession()
 	session2.assignedWorkflow = 1
-	session2.currentStep = "second"
+	session2.CurrentStep.Name = "second"
 
 	type args struct {
 		workItem messaging.WorkItem

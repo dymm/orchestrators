@@ -42,45 +42,53 @@ func GetTheWorkflowAndSession(allWorkflows []Workflow, workItem messaging.WorkIt
 	return workflow, session, nil
 }
 
-// SendToTheProcessor send the data to the processor
+// SendToTheNextProcessor send the data to the processor
 // return true if the workflow is finished and an error if needed
-func SendToTheProcessor(queue messaging.Queue, theWorkflow Workflow, session *Session, workItem messaging.WorkItem) (bool, error) {
+func SendToTheNextProcessor(queue messaging.Queue, theWorkflow Workflow, session *Session, workItem messaging.WorkItem) (bool, error) {
 
+	finished, step, workItem, err := getTheNextStep(theWorkflow, session, workItem)
+	if finished == false && err == nil {
+		setStepInformationInSession(session, step, workItem)
+		err = queue.Send(step.Process, workItem)
+	}
+	//Send to the process
+	return finished, err
+}
+
+//GetTheNextStep return true if the workflow is finished, if not return a workitem to send and update the session
+// If a next step is found the session variable 'CurrentStep' is updated
+func getTheNextStep(theWorkflow Workflow, session *Session, workItem messaging.WorkItem) (bool, Step, messaging.WorkItem, error) {
 	//Get the current step if the workflow is already running
 	var currentStep Step
 	currentFound := true
-	if session.currentStep != "" {
-		currentStep, currentFound = theWorkflow.Steps[session.currentStep]
-
+	if session.CurrentStep.Name != "" {
+		currentStep, currentFound = theWorkflow.Steps[session.CurrentStep.Name]
 	} else {
 		currentStep.OnSuccess = theWorkflow.FirstStep //Set the first step for the workflow
 	}
 	if currentFound == false {
-		return true, errors.New("No step '" + session.currentStep + "' found")
+		return true, Step{}, workItem, errors.New("No step '" + session.CurrentStep.Name + "' found")
 	}
 
 	//Get the step name to execute now
-	var nextStepName string
 	if _, errorPresent := workItem.GetValues()["error"]; errorPresent {
-		delete(workItem.GetValues(), "error") //Do not forward the error to the next step
-		nextStepName = currentStep.OnError
+		session.CurrentStep.Name = currentStep.OnError
 	} else {
-		nextStepName = currentStep.OnSuccess
+		session.CurrentStep.Name = currentStep.OnSuccess
 	}
-
-	if nextStepName == "" {
-		return true, nil //No next step defined, the workflow is finished
+	if session.CurrentStep.Name == "" {
+		return true, Step{}, workItem, nil //No next step defined, the workflow is finished
 	}
 
 	//Get the step to execute now
-	nextStep, nextFound := theWorkflow.Steps[nextStepName]
+	nextStep, nextFound := theWorkflow.Steps[session.CurrentStep.Name]
 	if nextFound == false {
-		return true, errors.New("No step '" + nextStepName + "' found")
+		return true, Step{}, workItem, errors.New("No step '" + session.CurrentStep.Name + "' found")
 	}
 
-	//Send to the process
-	session.currentStep = nextStepName
 	values := workItem.GetValues()
 	values["sessionId"] = strconv.FormatUint(session.Key, 10)
-	return false, queue.Send(nextStep.Process, messaging.NewWorkItem(values))
+	newWorkItem := messaging.NewWorkItem(values)
+
+	return false, nextStep, newWorkItem, nil
 }

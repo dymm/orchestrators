@@ -3,19 +3,18 @@ package workflow
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/dymm/gorchestrator/pkg/messaging"
 )
 
 //StartSessionTimeoutChecking start the timeout control loop
-func StartSessionTimeoutChecking(timeout int, queue messaging.Queue, timeoutDestination string) {
+func StartSessionTimeoutChecking(queue messaging.Queue, timeoutDestination string) {
 
-	go timeoutLoop(timeout, queue, timeoutDestination)
+	go timeoutLoop(queue, timeoutDestination)
 }
 
-func timeoutLoop(timeout int, queue messaging.Queue, timeoutDestination string) {
+func timeoutLoop(queue messaging.Queue, timeoutDestination string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in timeoutLoop", r)
@@ -24,7 +23,7 @@ func timeoutLoop(timeout int, queue messaging.Queue, timeoutDestination string) 
 	}()
 
 	for {
-		workitemToSend := listAllTimeoutedSession(timeout, queue, timeoutDestination)
+		workitemToSend := listAllTimeoutedSession(queue, timeoutDestination)
 		for _, workitem := range workitemToSend {
 			err := queue.Send(timeoutDestination, workitem)
 			if err != nil {
@@ -36,7 +35,7 @@ func timeoutLoop(timeout int, queue messaging.Queue, timeoutDestination string) 
 
 }
 
-func listAllTimeoutedSession(timeout int, queue messaging.Queue, timeoutDestination string) []messaging.WorkItem {
+func listAllTimeoutedSession(queue messaging.Queue, timeoutDestination string) []messaging.WorkItem {
 
 	sessionListMutex.Lock()
 	defer sessionListMutex.Unlock()
@@ -46,16 +45,10 @@ func listAllTimeoutedSession(timeout int, queue messaging.Queue, timeoutDestinat
 
 	workItemToSend := make([]messaging.WorkItem, 0, sessionCount)
 	now := time.Now()
-	for key, session := range sessionList {
-		if now.Sub(session.Started) >= time.Duration(timeout)*time.Second {
-
-			session.Timeouted = true
-			values := map[string]string{
-				"sessionId": strconv.FormatUint(key, 10),
-				"error":     `{"message":"Timeout"}`,
-			}
-			timeouted := messaging.NewWorkItem(values)
-			workItemToSend = append(workItemToSend, timeouted)
+	for _, session := range sessionList {
+		if session.CurrentStep.TimeoutTime.IsZero() == false && now.After(session.CurrentStep.TimeoutTime) {
+			session.CurrentStep.Workitem.GetValues()["error"] = `{"message":"Timeout"}`
+			workItemToSend = append(workItemToSend, session.CurrentStep.Workitem)
 		}
 	}
 	return workItemToSend
