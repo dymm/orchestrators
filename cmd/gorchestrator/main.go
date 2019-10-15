@@ -4,19 +4,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dymm/gorchestrator/pkg/messaging"
+	"github.com/dymm/gorchestrator/pkg/config"
 	"github.com/dymm/gorchestrator/pkg/workflow"
 )
 
 func main() {
-
-	allProducerAndConsumerQueues := getAllQueueOrDie()
-	startTheProcessorsAndProducer(allProducerAndConsumerQueues)
-	myMessageQueue := allProducerAndConsumerQueues["orchestrator"]
+	myMessageQueue := config.CreateMQMessageQueueOrDie()
 
 	allWorflows := getTheWorkflowsOrDie()
 
-	workflow.StartSessionTimeoutChecking(myMessageQueue, "orchestrator")
+	workflow.StartSessionTimeoutChecking(myMessageQueue, myMessageQueue.GetName())
 
 	for {
 		workItem, err := myMessageQueue.Receive()
@@ -49,16 +46,16 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 			"Step 1",
 			map[string]workflow.Step{
 				"Step 1": workflow.Step{
-					Process:   "subConstToValue",
+					Process:   "processor_sub",
 					OnSuccess: "Step 2",
 					OnError:   "Dump",
 					Timeout:   2,
 				},
 				"Step 2": workflow.Step{
-					Process: "printTheValue",
+					Process: "processor_print",
 				},
 				"Dump": workflow.Step{
-					Process: "handleError",
+					Process: "processor_error",
 				},
 			},
 		),
@@ -67,46 +64,24 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 			"Step 1",
 			map[string]workflow.Step{
 				"Step 1": workflow.Step{
-					Process:   "addConstToValue",
+					Process:   "processor_add",
 					OnSuccess: "Step 2",
 					OnError:   "Dump",
 					Timeout:   2,
 				},
 				"Step 2": workflow.Step{
-					Process:   "addConstToValue",
+					Process:   "processor_add",
 					OnSuccess: "Step 3",
 					OnError:   "Dump",
 					Timeout:   2,
 				},
 				"Step 3": workflow.Step{
-					Process: "printTheValue",
+					Process: "processor_print",
 				},
 				"Dump": workflow.Step{
-					Process: "handleError",
+					Process: "processor_error",
 				},
 			},
 		),
 	}
-}
-
-func getAllQueueOrDie() map[string]messaging.Queue {
-	queues := make(map[string]messaging.Queue)
-	queues["orchestrator"] = createMessageQueueOrDie("orchestrator", queues)
-	queues["addConstToValue"] = createMessageQueueOrDie("addConstToValue", queues)
-	queues["subConstToValue"] = createMessageQueueOrDie("subConstToValue", queues)
-	queues["printTheValue"] = createMessageQueueOrDie("printTheValue", queues)
-	queues["handleError"] = createMessageQueueOrDie("handleError", queues)
-	queues["producer"] = createMessageQueueOrDie("producer", queues)
-	return queues
-}
-
-func startTheProcessorsAndProducer(queues map[string]messaging.Queue) {
-	orchestratorQ := "orchestrator"
-	for i := 0; i < 3; i++ {
-		go addConstToValue(queues["addConstToValue"], orchestratorQ, 10)
-		go subConstToValue(queues["subConstToValue"], orchestratorQ, 14)
-		go printTheValue(queues["printTheValue"], orchestratorQ)
-		go handleError(queues["handleError"], orchestratorQ)
-	}
-	go createValueProducer(queues["producer"], orchestratorQ)
 }

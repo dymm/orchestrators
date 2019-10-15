@@ -1,9 +1,8 @@
 package rabbitmq
 
 import (
-	"errors"
-
 	"github.com/dymm/gorchestrator/pkg/messaging"
+	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 )
 
@@ -18,7 +17,7 @@ func New(config ChannelConfig) (queue messaging.Queue, err error) {
 		amqpChannel, err = connexion.Channel()
 	}
 	if err != nil {
-		return queue, errors.New("Input channel error. " + err.Error())
+		return queue, errors.Wrap(err, "Input channel error")
 	}
 
 	args := amqp.Table{}
@@ -40,7 +39,7 @@ func New(config ChannelConfig) (queue messaging.Queue, err error) {
 	)
 
 	if err != nil {
-		return queue, errors.New("Channel error. " + err.Error())
+		return queue, errors.Wrap(err, "Channel error")
 	}
 
 	//These will block all comm on the connexion until fully read

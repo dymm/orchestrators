@@ -3,8 +3,6 @@ services:
   rabbitmq:
     image: rabbitmq:management-alpine
     restart: unless-stopped
-    environment: 
-      - TZ=Europe/Paris
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -15,6 +13,72 @@ services:
         retries: 5
     networks:
       test-net:
+
+  orchestrator:
+    image: gorchestrator:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=gorchestrator
+      - RABBITMQ_OWN_NAME=orchestrator
+    env_file:
+      - rabbitmq-variables.env
+
+  processor_add:
+    image: gorchestrator:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=processor_add
+      - RABBITMQ_OWN_NAME=processor_add
+    env_file:
+      - rabbitmq-variables.env
+
+  processor_sub:
+    image: gorchestrator:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=processor_sub
+      - RABBITMQ_OWN_NAME=processor_sub
+    env_file:
+      - rabbitmq-variables.env
+
+  processor_print:
+    image: gorchestrator:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=processor_print
+      - RABBITMQ_OWN_NAME=processor_print
+    env_file:
+      - rabbitmq-variables.env
+
+  processor_error:
+    image: gorchestrator:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=processor_error
+      - RABBITMQ_OWN_NAME=processor_error
+    env_file:
+      - rabbitmq-variables.env
+
+  producer:
+    image: gorchestrator:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=producer
+      - RABBITMQ_OWN_NAME=producer
+    env_file:
+      - rabbitmq-variables.env
 
 networks:
   test-net:

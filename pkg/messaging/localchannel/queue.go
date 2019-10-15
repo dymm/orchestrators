@@ -23,6 +23,11 @@ type Queue struct {
 	accessibleQueues map[string]messaging.Queue
 }
 
+//GetName give the queue name
+func (queue Queue) GetName() string {
+	return queue.name
+}
+
 //Receive a message from the queue
 func (queue Queue) Receive() (messaging.WorkItem, error) {
 	var err error

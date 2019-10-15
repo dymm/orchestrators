@@ -33,6 +33,11 @@ func (i *Queue) Close() error {
 	return nil
 }
 
+//GetName give the queue name
+func (i Queue) GetName() string {
+	return i.name
+}
+
 //Send a message to the 'reply to' queue
 func (i Queue) Send(destination string, message messaging.WorkItem) error {
 	serializedDictionnary, err := json.Marshal(message.GetValues())
