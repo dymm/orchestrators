@@ -19,6 +19,8 @@ services:
     restart: unless-stopped
     networks:
       test-net:
+    depends_on:
+      - rabbitmq
     environment:
       - PROGRAM=gorchestrator
       - RABBITMQ_OWN_NAME=orchestrator
@@ -30,6 +32,8 @@ services:
     restart: unless-stopped
     networks:
       test-net:
+    depends_on:
+      - orchestrator
     environment:
       - PROGRAM=processor_add
       - RABBITMQ_OWN_NAME=processor_add
@@ -41,6 +45,8 @@ services:
     restart: unless-stopped
     networks:
       test-net:
+    depends_on:
+      - orchestrator
     environment:
       - PROGRAM=processor_sub
       - RABBITMQ_OWN_NAME=processor_sub
@@ -52,6 +58,8 @@ services:
     restart: unless-stopped
     networks:
       test-net:
+    depends_on:
+      - orchestrator
     environment:
       - PROGRAM=processor_print
       - RABBITMQ_OWN_NAME=processor_print
@@ -63,6 +71,8 @@ services:
     restart: unless-stopped
     networks:
       test-net:
+    depends_on:
+      - orchestrator
     environment:
       - PROGRAM=processor_error
       - RABBITMQ_OWN_NAME=processor_error
@@ -74,6 +84,8 @@ services:
     restart: unless-stopped
     networks:
       test-net:
+    depends_on:
+      - orchestrator
     environment:
       - PROGRAM=producer
       - RABBITMQ_OWN_NAME=producer

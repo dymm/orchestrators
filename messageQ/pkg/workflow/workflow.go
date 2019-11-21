@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/dymm/gorchestrator/pkg/messaging"
+	"github.com/dymm/orchestrators/messageQ/pkg/messaging"
 )
 
 //New return a new workflow
@@ -49,6 +49,7 @@ func SendToTheNextProcessor(queue messaging.Queue, theWorkflow Workflow, session
 	finished, step, workItem, err := getTheNextStep(theWorkflow, session, workItem)
 	if finished == false && err == nil {
 		setStepInformationInSession(session, step, workItem)
+		workItem.GetValues()["replyTo"] = queue.GetName()
 		err = queue.Send(step.Process, workItem)
 	}
 	//Send to the process

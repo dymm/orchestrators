@@ -1,4 +1,4 @@
-module github.com/dymm/gorchestrator
+module github.com/dymm/orchestrators/messageQ
 
 go 1.13
 

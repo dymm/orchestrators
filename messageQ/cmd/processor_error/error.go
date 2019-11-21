@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dymm/gorchestrator/pkg/config"
-	"github.com/dymm/gorchestrator/pkg/data"
+	"github.com/dymm/orchestrators/messageQ/pkg/config"
+	"github.com/dymm/orchestrators/messageQ/pkg/data"
 )
-
-const outgoingQueue = "orchestrator"
 
 func main() {
 	myMessageQueue := config.CreateMQMessageQueueOrDie()
@@ -30,7 +28,7 @@ func main() {
 
 		fmt.Printf("Error on %s with a value %d\n", val.Name, val.Value)
 
-		err = myMessageQueue.Send(outgoingQueue, workItem)
+		err = myMessageQueue.Send(workItem.GetValues()["replyTo"], workItem)
 		if err != nil {
 			fmt.Println("processorError : error while sending the message. ", err)
 			os.Exit(0)

@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dymm/gorchestrator/pkg/messaging"
-	"github.com/dymm/gorchestrator/pkg/messaging/rabbitmq"
+	"github.com/dymm/orchestrators/messageQ/pkg/messaging"
+	"github.com/dymm/orchestrators/messageQ/pkg/messaging/rabbitmq"
 )
 
 //CreateMQMessageQueueOrDie get the communication channel

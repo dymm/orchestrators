@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dymm/gorchestrator/pkg/messaging"
+	"github.com/dymm/orchestrators/messageQ/pkg/messaging"
 )
 
 //StartSessionTimeoutChecking start the timeout control loop

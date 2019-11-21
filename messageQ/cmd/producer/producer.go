@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/dymm/gorchestrator/pkg/config"
-	"github.com/dymm/gorchestrator/pkg/data"
-	"github.com/dymm/gorchestrator/pkg/messaging"
+	"github.com/dymm/orchestrators/messageQ/pkg/config"
+	"github.com/dymm/orchestrators/messageQ/pkg/data"
+	"github.com/dymm/orchestrators/messageQ/pkg/messaging"
 )
 
 const outgoingQueue = "orchestrator"

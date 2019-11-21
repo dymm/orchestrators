@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dymm/gorchestrator/pkg/config"
-	"github.com/dymm/gorchestrator/pkg/data"
+	"github.com/dymm/orchestrators/messageQ/pkg/config"
+	"github.com/dymm/orchestrators/messageQ/pkg/data"
 )
 
-const outgoingQueue = "orchestrator"
 const valueToSub = 7
 
 func main() {
@@ -34,12 +33,12 @@ func main() {
 		serializedValue, _ := json.Marshal(val)
 		workItem.GetValues()["data"] = string(serializedValue)
 
-		if val.Value >= 35 && val.Value <= 65 {
+		if val.Value >= 45 && val.Value <= 55 {
 			fmt.Printf("%s processor_sub : loosing the value\n", val.Name)
 			continue //Lose the message for a timeout
 		}
 
-		err = myMessageQueue.Send(outgoingQueue, workItem)
+		err = myMessageQueue.Send(workItem.GetValues()["replyTo"], workItem)
 		if err != nil {
 			fmt.Println("processor_sub : error while sending the message. ", err)
 			os.Exit(0)

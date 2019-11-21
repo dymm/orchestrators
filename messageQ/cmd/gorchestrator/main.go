@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dymm/gorchestrator/pkg/config"
-	"github.com/dymm/gorchestrator/pkg/workflow"
+	"github.com/dymm/orchestrators/messageQ/pkg/config"
+	"github.com/dymm/orchestrators/messageQ/pkg/workflow"
 )
 
 func main() {

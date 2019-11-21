@@ -2,9 +2,8 @@ package rabbitmq
 
 import (
 	"encoding/json"
-	"fmt"
 
-	"github.com/dymm/gorchestrator/pkg/messaging"
+	"github.com/dymm/orchestrators/messageQ/pkg/messaging"
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 )
@@ -44,7 +43,6 @@ func (i Queue) Send(destination string, message messaging.WorkItem) error {
 	if err != nil {
 		return errors.Wrapf(err, "Unable to marshal data '%v'", message.GetValues())
 	}
-	fmt.Printf("Sent to queue '%s' from queue '%s' '%s'\n", destination, i.name, string(serializedDictionnary))
 	return i.connChannel.Publish(
 		"",          // use the default exchange
 		destination, // routing key, e.g. our queue name
@@ -65,7 +63,6 @@ func (i Queue) Receive() (messaging.WorkItem, error) {
 		if more == false {
 			err = errors.New("Closed")
 		} else {
-			fmt.Println("Received on queue ", i.name, string(amqpDelivery.Body))
 			err = json.Unmarshal(amqpDelivery.Body, &values)
 		}
 		if err != nil {

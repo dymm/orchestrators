@@ -1,7 +1,7 @@
 package rabbitmq
 
 import (
-	"github.com/dymm/gorchestrator/pkg/messaging"
+	"github.com/dymm/orchestrators/messageQ/pkg/messaging"
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 )

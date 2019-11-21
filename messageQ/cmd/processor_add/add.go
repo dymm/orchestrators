@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dymm/gorchestrator/pkg/config"
-	"github.com/dymm/gorchestrator/pkg/data"
+	"github.com/dymm/orchestrators/messageQ/pkg/config"
+	"github.com/dymm/orchestrators/messageQ/pkg/data"
 )
 
-const outgoingQueue = "orchestrator"
 const valueToAdd = 7
 
 func main() {
@@ -39,7 +38,7 @@ func main() {
 			continue //Lose the message for a timeout
 		}
 
-		err = myMessageQueue.Send(outgoingQueue, workItem)
+		err = myMessageQueue.Send(workItem.GetValues()["replyTo"], workItem)
 		if err != nil {
 			fmt.Println("processorAdd : error while sending the message. ", err)
 			os.Exit(0)

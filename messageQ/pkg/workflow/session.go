@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dymm/gorchestrator/pkg/messaging"
+	"github.com/dymm/orchestrators/messageQ/pkg/messaging"
 )
 
 //Session about the assigned workflow
