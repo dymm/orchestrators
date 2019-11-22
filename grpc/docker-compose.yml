@@ -1,0 +1,52 @@
+version: '3'
+services:
+  orchestrator:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=orchestrator
+    depends_on:
+      - processor_add
+      - processor_sub
+      - processor_print
+      
+  processor_add:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=processor_add
+  
+  processor_sub:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=processor_sub
+
+  processor_print:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=processor_print
+
+  producer:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    environment:
+      - PROGRAM=producer
+    depends_on:
+      - orchestrator
+      - processor_add
+      - processor_sub
+      - processor_print
+networks:
+  test-net:
