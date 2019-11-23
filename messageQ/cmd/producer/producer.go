@@ -34,8 +34,6 @@ func main() {
 		}
 		if counter%222 == 0 {
 			time.Sleep(30 * time.Second)
-		} else {
-			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }

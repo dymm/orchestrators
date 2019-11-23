@@ -9,13 +9,13 @@ import (
 	"github.com/dymm/orchestrators/messageQ/pkg/data"
 )
 
-const valueToSub = 7
+const valueToAdd = 7
 
 func main() {
 	myMessageQueue := config.CreateMQMessageQueueOrDie()
 
-	fmt.Println(("Starting processor_sub"))
-	defer fmt.Println(("Stoping processor_sub"))
+	fmt.Println(("Starting processor-add"))
+	defer fmt.Println(("Stoping processor-add"))
 
 	for {
 		workItem, err := myMessageQueue.Receive()
@@ -25,22 +25,22 @@ func main() {
 			val, err = data.DeserializeTestValue(workItem.GetValues())
 		}
 		if err != nil {
-			fmt.Println("processor_sub : error while reading the message. ", err)
+			fmt.Println("processor-add : error while reading the message. ", err)
 			os.Exit(0)
 		}
 
-		val.Value = val.Value + valueToSub
+		val.Value = val.Value + valueToAdd
 		serializedValue, _ := json.Marshal(val)
 		workItem.GetValues()["data"] = string(serializedValue)
 
-		if val.Value >= 45 && val.Value <= 55 {
-			fmt.Printf("%s processor_sub : loosing the value\n", val.Name)
+		if val.Value >= 0 && val.Value <= 100 {
+			fmt.Printf("%s processor-add : loosing the value\n", val.Name)
 			continue //Lose the message for a timeout
 		}
 
 		err = myMessageQueue.Send(workItem.GetValues()["replyTo"], workItem)
 		if err != nil {
-			fmt.Println("processor_sub : error while sending the message. ", err)
+			fmt.Println("processor-add : error while sending the message. ", err)
 			os.Exit(0)
 		}
 	}

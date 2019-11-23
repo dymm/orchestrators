@@ -22,10 +22,10 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceRoot}/cmd/processor_sub/sub.go",
+            "program": "${workspaceRoot}/cmd/processor-sub/sub.go",
             "env": {
                 "RABBITMQ_ADDR": "amqp://guest:guest@localhost:5672/",
-                "RABBITMQ_OWN_NAME":"processor_sub",
+                "RABBITMQ_OWN_NAME":"processor-sub",
                 "RABBITMQ_OWN_TTL": "",
                 "RABBITMQ_OWN_DEAD_LETTER": "",
             },

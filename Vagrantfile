@@ -11,6 +11,9 @@ Vagrant.configure("2") do |config|
     config.vm.network "forwarded_port", guest: 15672, host: 15672
 	config.vm.network "forwarded_port", guest: 10000, host: 10000
 	config.vm.network "forwarded_port", guest: 10001, host: 10001
+	config.vm.network "forwarded_port", guest: 8600, host: 8600, protocol: "udp"
+	config.vm.network "forwarded_port", guest: 8500, host: 8500
+	config.vm.network "forwarded_port", guest: 8300, host: 8300
   
    config.vm.provider "virtualbox" do |vb|
      # Display the VirtualBox GUI when booting the machine

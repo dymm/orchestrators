@@ -8,33 +8,33 @@ services:
     environment:
       - PROGRAM=orchestrator
     depends_on:
-      - processor_add
-      - processor_sub
-      - processor_print
+      - processor-add
+      - processor-sub
+      - processor-print
       
-  processor_add:
+  processor-add:
     image: grpc:latest
     restart: unless-stopped
     networks:
       test-net:
     environment:
-      - PROGRAM=processor_add
+      - PROGRAM=processor-add
   
-  processor_sub:
+  processor-sub:
     image: grpc:latest
     restart: unless-stopped
     networks:
       test-net:
     environment:
-      - PROGRAM=processor_sub
+      - PROGRAM=processor-sub
 
-  processor_print:
+  processor-print:
     image: grpc:latest
     restart: unless-stopped
     networks:
       test-net:
     environment:
-      - PROGRAM=processor_print
+      - PROGRAM=processor-print
 
   producer:
     image: grpc:latest
@@ -45,8 +45,8 @@ services:
       - PROGRAM=producer
     depends_on:
       - orchestrator
-      - processor_add
-      - processor_sub
-      - processor_print
+      - processor-add
+      - processor-sub
+      - processor-print
 networks:
   test-net:

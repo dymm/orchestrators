@@ -8,28 +8,46 @@ import (
 	"sync/atomic"
 	"time"
 
+	resolver "github.com/nicholasjackson/grpc-consul-resolver"
 	"google.golang.org/grpc"
 
-	"github.com/dymm/orchestrators/grpc/pkg/messaging/process"
+	"github.com/dymm/orchestrators/grpc-consul/pkg/messaging/process"
 )
 
-const orchestrator = "orchestrator:3000"
-const maxValue = 999999
+const maxValue = 200
 
 var infoLogger *log.Logger
 
 func main() {
 	infoLogger = log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.Lshortfile)
+	for i := 5; i > 0; i-- {
+		infoLogger.Println("Configuration in ", i)
+		time.Sleep(1 * time.Second)
+	}
 
-	conn, err := grpc.Dial(orchestrator, grpc.WithInsecure())
+	r := resolver.NewServiceQueryResolver("http://consul-server:8500")
+	// use the default poll interval of 60 seconds
+	// the poll interval can be changed by setting the resolvers PollInterval field
+	r.PollInterval = 10 * time.Second
+
+	// Create the gRPC load balancer
+	lb := grpc.RoundRobin(r)
+
+	// create a new gRPC client connection
+	conn, err := grpc.Dial(
+		"orchestrator",
+		grpc.WithInsecure(),
+		grpc.WithBalancer(lb),
+		grpc.WithTimeout(5*time.Second),
+	)
 	if err != nil {
 		infoLogger.Fatalf("Dial Failed: %v", err)
 	}
-	infoLogger.Println("Connected to ", orchestrator)
+	infoLogger.Println("Connected to the orchestrator")
 	defer conn.Close()
 	processClient := process.NewProcessServiceClient(conn)
 
-	for i := 10; i > 0; i-- {
+	for i := 5; i > 0; i-- {
 		infoLogger.Println("Starting in ", i)
 		time.Sleep(1 * time.Second)
 	}
@@ -54,23 +72,20 @@ func main() {
 			if err == nil {
 				infoLogger.Printf("%s - End of processing in %s\n", val.GetName(), elapsed)
 			} else {
-				infoLogger.Printf("%s - Error while processing in %s\n%v\n", val.GetName(), elapsed, err)
+				infoLogger.Printf("%s - Error while processing in %s\n%v\n", val.GetName(), err, elapsed)
 			}
 
 			atomic.AddInt64(&inFligth, -1)
 		}(&newValue)
 
 		if counter%maxValue == 0 {
-			for i := 5; i > 0; i-- {
-				infoLogger.Printf("%d call pending, emiting agin in %d sec", inFligth, i)
-				time.Sleep(1 * time.Second)
-			}
+			infoLogger.Printf("%d call pending", inFligth)
+			time.Sleep(10 * time.Second)
+			infoLogger.Printf("%d call pending", inFligth)
 		} else if inFligth > 200 {
 			infoLogger.Printf("%d call pending, waiting a little bit", inFligth)
-			for i := 5; i > 0; i-- {
-				infoLogger.Printf("%d call still pending, emiting agin in %d sec", inFligth, i)
-				time.Sleep(1 * time.Second)
-			}
+			time.Sleep(10 * time.Second)
+			infoLogger.Printf("%d call still pending", inFligth)
 		}
 	}
 }

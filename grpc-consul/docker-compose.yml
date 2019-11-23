@@ -1,0 +1,118 @@
+version: '3'
+services:
+  consul-server:
+    image: consul:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    ports:
+        - "8600:8600/udp"
+        - "8500:8500"
+        - "8300:8300"
+    environment:
+      - SERVICE_NAME=consul-server
+    command: agent -server -ui -node=consul-grpc -bind 0.0.0.0 -client 0.0.0.0 -bootstrap-expect=1
+
+  consul-agent:
+    image: consul:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    command: agent -join=consul-server -client 0.0.0.0
+    environment:
+      - SERVICE_NAME=consul-agent
+    depends_on:
+      - consul-server
+
+  consul-registrator:
+    image: gliderlabs/registrator:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock
+    command: "-internal consul://consul-server:8500"
+    depends_on:
+      - consul-server
+
+  orchestrator:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    expose:
+      - "3000"
+    dns: consul-agent
+    dns_search: consul-agent
+    environment:
+      - SERVICE_NAME=orchestrator
+      - PORT=3000
+    depends_on:
+      - consul-registrator
+      - processor-add
+      - processor-sub
+      - processor-print
+      
+  processor-add:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    expose:
+      - "3000"
+    dns: consul-agent
+    dns_search: consul-agent
+    environment:
+      - SERVICE_NAME=processor-add
+      - PORT=3000
+    depends_on:
+      - consul-registrator
+
+  processor-sub:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    expose:
+      - "3000"
+    dns: consul-agent
+    dns_search: consul-agent
+    environment:
+      - SERVICE_NAME=processor-sub
+      - PORT=3000
+    depends_on:
+      - consul-registrator
+
+  processor-print:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    expose:
+      - "3000"
+    dns: consul-agent
+    dns_search: consul-agent
+    environment:
+      - SERVICE_NAME=processor-print
+      - PORT=3000
+    depends_on:
+      - consul-registrator
+
+  producer:
+    image: grpc:latest
+    restart: unless-stopped
+    networks:
+      test-net:
+    dns: consul-agent
+    dns_search: consul-agent
+    environment:
+      - SERVICE_NAME=producer
+    depends_on:
+      - consul-registrator
+      - orchestrator
+      - processor-add
+      - processor-sub
+      - processor-print
+  
+networks:
+  test-net:

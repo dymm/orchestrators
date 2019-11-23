@@ -41,10 +41,14 @@ RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/orchestrator \
 && CGO_ENABLED=0 GOOS=linux go build ./cmd/producer
 
 # final stage
-FROM alpine
+FROM alpine:latest
+RUN apk add --update \
+    curl \
+    && rm -rf /var/cache/apk/*
 RUN adduser -S -D -H -h /app appuser
 USER appuser
 WORKDIR /app
 COPY docker/start.sh /app/
 COPY --from=builder /app/orchestrator /app/processor-add /app/processor-sub /app/processor-print /app/producer /app/
+
 ENTRYPOINT ["/app/start.sh"]

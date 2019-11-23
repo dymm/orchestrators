@@ -15,10 +15,10 @@ COPY . .
 
 # Build the Go apps
 RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/gorchestrator \
-&& CGO_ENABLED=0 GOOS=linux go build ./cmd/processor_add \
-&& CGO_ENABLED=0 GOOS=linux go build ./cmd/processor_sub \
-&& CGO_ENABLED=0 GOOS=linux go build ./cmd/processor_error \
-&& CGO_ENABLED=0 GOOS=linux go build ./cmd/processor_print \
+&& CGO_ENABLED=0 GOOS=linux go build ./cmd/processor-add \
+&& CGO_ENABLED=0 GOOS=linux go build ./cmd/processor-sub \
+&& CGO_ENABLED=0 GOOS=linux go build ./cmd/processor-error \
+&& CGO_ENABLED=0 GOOS=linux go build ./cmd/processor-print \
 && CGO_ENABLED=0 GOOS=linux go build ./cmd/producer
 
 # final stage
@@ -27,5 +27,5 @@ RUN adduser -S -D -H -h /app appuser
 USER appuser
 WORKDIR /app
 COPY docker/start.sh /app/
-COPY --from=builder /app/gorchestrator /app/processor_add /app/processor_sub /app/processor_error /app/processor_print /app/producer /app/
+COPY --from=builder /app/gorchestrator /app/processor-add /app/processor-sub /app/processor-error /app/processor-print /app/producer /app/
 ENTRYPOINT ["/app/start.sh"]

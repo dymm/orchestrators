@@ -16,7 +16,7 @@ type processServiceServer struct {
 func (s *processServiceServer) Process(ctx context.Context, request *process.ProcessRequest) (*process.ProcessResponse, error) {
 
 	if request.Value-valueToAdd%33 == 0 {
-		fmt.Printf("%s - processorSub : timing out the process\n", request.Name)
+		fmt.Printf("%s - processor-sub : timing out the process\n", request.Name)
 		time.Sleep(4 * time.Second)
 	}
 

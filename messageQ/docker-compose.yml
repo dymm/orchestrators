@@ -27,7 +27,7 @@ services:
     env_file:
       - rabbitmq-variables.env
 
-  processor_add:
+  processor-add:
     image: gorchestrator:latest
     restart: unless-stopped
     networks:
@@ -35,12 +35,12 @@ services:
     depends_on:
       - orchestrator
     environment:
-      - PROGRAM=processor_add
-      - RABBITMQ_OWN_NAME=processor_add
+      - PROGRAM=processor-add
+      - RABBITMQ_OWN_NAME=processor-add
     env_file:
       - rabbitmq-variables.env
 
-  processor_sub:
+  processor-sub:
     image: gorchestrator:latest
     restart: unless-stopped
     networks:
@@ -48,12 +48,12 @@ services:
     depends_on:
       - orchestrator
     environment:
-      - PROGRAM=processor_sub
-      - RABBITMQ_OWN_NAME=processor_sub
+      - PROGRAM=processor-sub
+      - RABBITMQ_OWN_NAME=processor-sub
     env_file:
       - rabbitmq-variables.env
 
-  processor_print:
+  processor-print:
     image: gorchestrator:latest
     restart: unless-stopped
     networks:
@@ -61,12 +61,12 @@ services:
     depends_on:
       - orchestrator
     environment:
-      - PROGRAM=processor_print
-      - RABBITMQ_OWN_NAME=processor_print
+      - PROGRAM=processor-print
+      - RABBITMQ_OWN_NAME=processor-print
     env_file:
       - rabbitmq-variables.env
 
-  processor_error:
+  processor-error:
     image: gorchestrator:latest
     restart: unless-stopped
     networks:
@@ -74,8 +74,8 @@ services:
     depends_on:
       - orchestrator
     environment:
-      - PROGRAM=processor_error
-      - RABBITMQ_OWN_NAME=processor_error
+      - PROGRAM=processor-error
+      - RABBITMQ_OWN_NAME=processor-error
     env_file:
       - rabbitmq-variables.env
 

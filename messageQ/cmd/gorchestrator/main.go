@@ -46,16 +46,16 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 			"Step 1",
 			map[string]workflow.Step{
 				"Step 1": workflow.Step{
-					Process:   "processor_sub",
+					Process:   "processor-sub",
 					OnSuccess: "Step 2",
 					OnError:   "Dump",
 					Timeout:   2,
 				},
 				"Step 2": workflow.Step{
-					Process: "processor_print",
+					Process: "processor-print",
 				},
 				"Dump": workflow.Step{
-					Process: "processor_error",
+					Process: "processor-error",
 				},
 			},
 		),
@@ -64,22 +64,22 @@ func getTheWorkflowsOrDie() []workflow.Workflow {
 			"Step 1",
 			map[string]workflow.Step{
 				"Step 1": workflow.Step{
-					Process:   "processor_add",
+					Process:   "processor-add",
 					OnSuccess: "Step 2",
 					OnError:   "Dump",
 					Timeout:   2,
 				},
 				"Step 2": workflow.Step{
-					Process:   "processor_add",
+					Process:   "processor-add",
 					OnSuccess: "Step 3",
 					OnError:   "Dump",
 					Timeout:   2,
 				},
 				"Step 3": workflow.Step{
-					Process: "processor_print",
+					Process: "processor-print",
 				},
 				"Dump": workflow.Step{
-					Process: "processor_error",
+					Process: "processor-error",
 				},
 			},
 		),
