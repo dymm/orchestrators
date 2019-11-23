@@ -33,7 +33,7 @@ func main() {
 		serializedValue, _ := json.Marshal(val)
 		workItem.GetValues()["data"] = string(serializedValue)
 
-		if val.Value >= 0 && val.Value <= 100 {
+		if val.Value < 0 {
 			fmt.Printf("%s processor-add : loosing the value\n", val.Name)
 			continue //Lose the message for a timeout
 		}

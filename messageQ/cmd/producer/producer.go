@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"log"
 	"os"
+	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/dymm/orchestrators/messageQ/pkg/config"
@@ -13,27 +15,66 @@ import (
 )
 
 const outgoingQueue = "orchestrator"
+const timeLayout = "2006-01-02 15:04:05.000000"
+
+var inFligth int64
+var infoLogger *log.Logger
 
 func main() {
+	infoLogger = log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.Lshortfile)
 	myMessageQueue := config.CreateMQMessageQueueOrDie()
+	go receiveLoop(myMessageQueue)
+
 	time.Sleep(3 * time.Second)
-	counter := 0
+	var counter int64
 	for {
 		counter = counter + 1
 		newValue := data.TestValue{
 			Name:  fmt.Sprintf("Value %d", counter),
-			Value: rand.Intn(100),
+			Value: int(counter % 200),
 		}
-		fmt.Printf("%s : Producing the value %d\n", newValue.Name, newValue.Value)
+
+		current := time.Now()
 		serialized, _ := json.Marshal(newValue)
-		newWorkItem := messaging.NewWorkItem(map[string]string{"data": string(serialized)})
+
+		newWorkItem := messaging.NewWorkItem(
+			map[string]string{
+				"data":         string(serialized),
+				"id":           strconv.FormatInt(counter, 10),
+				"start":        current.Format(timeLayout),
+				"finalReplyTo": myMessageQueue.GetName(),
+			})
 
 		if err := myMessageQueue.Send(outgoingQueue, newWorkItem); err != nil {
-			fmt.Println("Error while sending the message. ", err)
+			infoLogger.Println("Error while sending the message. ", err)
 			os.Exit(0)
 		}
+		atomic.AddInt64(&inFligth, 1)
 		if counter%222 == 0 {
-			time.Sleep(30 * time.Second)
+			infoLogger.Printf("%d call pending\n", inFligth)
+			time.Sleep(10 * time.Second)
+			infoLogger.Printf("%d call pending\n", inFligth)
+		} else if inFligth > 200 {
+			infoLogger.Printf("%d call pending, waiting a little bit\n", inFligth)
+			time.Sleep(10 * time.Second)
+			infoLogger.Printf("%d call still pending\n", inFligth)
 		}
+	}
+}
+
+func receiveLoop(queue messaging.Queue) {
+
+	for {
+		workItem, err := queue.Receive()
+		if err != nil {
+			infoLogger.Println("Error while receiving a message", err)
+			os.Exit(-1)
+		}
+		id := workItem.GetValues()["id"]
+		startTime, err := time.Parse(timeLayout, workItem.GetValues()["start"])
+		elapsed := time.Since(startTime)
+		infoLogger.Printf("%s - End of processing in %s\n", id, elapsed)
+
+		atomic.AddInt64(&inFligth, -1)
 	}
 }

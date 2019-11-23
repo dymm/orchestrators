@@ -12,6 +12,7 @@
             "program": "${workspaceRoot}/cmd/gorchestrator/main.go",
             "env": {
                 "RABBITMQ_ADDR": "amqp://guest:guest@localhost:5672/",
+                "RABBITMQ_OWN_NAME":"orchestrator",
                 "RABBITMQ_OWN_TTL": "",
                 "RABBITMQ_OWN_DEAD_LETTER": "",
             },

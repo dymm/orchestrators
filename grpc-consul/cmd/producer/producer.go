@@ -41,7 +41,7 @@ func main() {
 		grpc.WithTimeout(5*time.Second),
 	)
 	if err != nil {
-		infoLogger.Fatalf("Dial Failed: %v", err)
+		infoLogger.Fatalf("Dial Failed: %v\n", err)
 	}
 	infoLogger.Println("Connected to the orchestrator")
 	defer conn.Close()
@@ -79,13 +79,13 @@ func main() {
 		}(&newValue)
 
 		if counter%maxValue == 0 {
-			infoLogger.Printf("%d call pending", inFligth)
+			infoLogger.Printf("%d call pending\n", inFligth)
 			time.Sleep(10 * time.Second)
-			infoLogger.Printf("%d call pending", inFligth)
+			infoLogger.Printf("%d call pending\n", inFligth)
 		} else if inFligth > 200 {
-			infoLogger.Printf("%d call pending, waiting a little bit", inFligth)
+			infoLogger.Printf("%d call pending, waiting a little bit\n", inFligth)
 			time.Sleep(10 * time.Second)
-			infoLogger.Printf("%d call still pending", inFligth)
+			infoLogger.Printf("%d call still pending\n", inFligth)
 		}
 	}
 }

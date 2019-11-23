@@ -32,6 +32,12 @@ func main() {
 			finished = true
 		}
 		if finished {
+			replyTo := workItem.GetValues()["finalReplyTo"]
+			if errS := myMessageQueue.Send(replyTo, workItem); errS != nil {
+				fmt.Printf("Workflow '%d' error while sending the result to %s\n%v", workflowSession.Key, replyTo, errS)
+			}
+			fmt.Printf("Workflow '%d' sending the result to %s\n", workflowSession.Key, replyTo)
+
 			fmt.Printf("Workflow '%d' finished in %d ms\n", workflowSession.Key, time.Now().Sub(workflowSession.CurrentStep.Started).Milliseconds())
 			workflow.DeleteSession(workflowSession)
 		}
