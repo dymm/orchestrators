@@ -5,24 +5,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dymm/orchestrators/grpc/pkg/messaging/process"
+	"github.com/dymm/orchestrators/grpc/cmd/processor-sub/api"
 )
 
-const valueToAdd = -7
-
-type processServiceServer struct {
+type subServiceServer struct {
 }
 
-func (s *processServiceServer) Process(ctx context.Context, request *process.ProcessRequest) (*process.ProcessResponse, error) {
+func (s *subServiceServer) Sub(ctx context.Context, req *api.SubRequest) (*api.SubResult, error) {
 
-	if request.Value-valueToAdd%33 == 0 {
-		fmt.Printf("%s - processor-sub : timing out the process\n", request.Name)
+	result := req.Value1 + req.Value2
+	if result == 0 {
+		fmt.Printf("%s - processor-sub : timing out the process\n", req.Name)
 		time.Sleep(4 * time.Second)
 	}
-
-	result := request.Value + valueToAdd
-	if result < 0 {
-		result = 0
-	}
-	return &process.ProcessResponse{Result: uint64(result)}, nil
+	return &api.SubResult{Result: result}, nil
 }

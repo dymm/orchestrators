@@ -5,83 +5,80 @@ import (
 	"log"
 	"time"
 
-	"github.com/dymm/orchestrators/grpc/pkg/messaging/process"
+	"github.com/dymm/orchestrators/grpc/cmd/orchestrator/api"
+	add "github.com/dymm/orchestrators/grpc/cmd/processor-add/api"
+	print "github.com/dymm/orchestrators/grpc/cmd/processor-print/api"
+	sub "github.com/dymm/orchestrators/grpc/cmd/processor-sub/api"
 	"google.golang.org/grpc"
 )
 
 type processServiceServer struct {
 	infoLogger     *log.Logger
 	connAdd        *grpc.ClientConn
-	processorAdd   process.ProcessServiceClient
+	processorAdd   add.AddServiceClient
 	connSub        *grpc.ClientConn
-	processorSub   process.ProcessServiceClient
+	processorSub   sub.SubServiceClient
 	connPrint      *grpc.ClientConn
-	processorPrint process.ProcessServiceClient
+	processorPrint print.PrintServiceClient
 }
 
-func (s *processServiceServer) Process(ctx context.Context, request *process.ProcessRequest) (*process.ProcessResponse, error) {
+func (s *processServiceServer) Process(ctx context.Context, request *api.ProcessRequest) (*api.ProcessResponse, error) {
 
-	var result uint64
+	var result int64
 	var err error
 	if request.GetValue() < 50 {
-		result, err = s.doProcessing1(request)
+		result, err = s.doProcessing1(ctx, request)
 	} else {
-		result, err = s.doProcessing2(request)
+		result, err = s.doProcessing2(ctx, request)
 	}
 
-	return &process.ProcessResponse{Result: result}, err
+	return &api.ProcessResponse{Result: result}, err
 }
 
-func (s *processServiceServer) doProcessing1(request *process.ProcessRequest) (uint64, error) {
+func (s *processServiceServer) doProcessing1(parentCtx context.Context, request *api.ProcessRequest) (int64, error) {
 	s.infoLogger.Printf("%s - doProcessing1 start\n", request.GetName())
 	defer s.infoLogger.Printf("%s - doProcessing1 end\n", request.GetName())
 
 	//Sub
-	s.infoLogger.Printf("%s - doProcessing1 start sub\n", request.GetName())
-	newVal := &process.ProcessRequest{Name: request.GetName(), Value: request.GetValue()}
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*4)
-	result, err := s.processorSub.Process(ctx, newVal)
+	ctx, cancel := context.WithTimeout(parentCtx, time.Second*4)
+	result, err := s.processorSub.Sub(ctx, &sub.SubRequest{Name: request.Name, Value1: request.Value, Value2: 1})
 	defer cancel()
 	if err != nil {
 		return 0, err
 	}
-	newVal.Value = int64(result.GetResult())
 
 	//Print
-	s.infoLogger.Printf("%s - doProcessing1 start print\n", request.GetName())
-	ctx2, cancel2 := context.WithTimeout(context.TODO(), time.Second*4)
+	ctx2, cancel2 := context.WithTimeout(parentCtx, time.Second*4)
 	defer cancel2()
-	if _, err = s.processorSub.Process(ctx2, newVal); err != nil {
+	if _, err = s.processorPrint.Print(ctx2, &print.PrintRequest{Name: request.Name, Value: result.Result}); err != nil {
 		return 0, err
 	}
 
-	return uint64(newVal.Value), nil
+	return result.Result, nil
 }
 
-func (s *processServiceServer) doProcessing2(request *process.ProcessRequest) (uint64, error) {
+func (s *processServiceServer) doProcessing2(parentCtx context.Context, request *api.ProcessRequest) (int64, error) {
 	s.infoLogger.Printf("%s - doProcessing2 start\n", request.GetName())
 	defer s.infoLogger.Printf("%s - doProcessing2 end\n", request.GetName())
 
 	//Add
-	newVal := &process.ProcessRequest{Name: request.GetName(), Value: request.GetValue()}
+	result := request.GetValue()
 	for i := 0; i < 2; i++ {
-		s.infoLogger.Printf("%s - doProcessing2 start add %d\n", request.GetName(), i+1)
-		ctx, cancel := context.WithTimeout(context.TODO(), time.Second*4)
-		result, err := s.processorAdd.Process(ctx, newVal)
+		ctx, cancel := context.WithTimeout(parentCtx, time.Second*4)
+		addedResult, err := s.processorAdd.Add(ctx, &add.AddRequest{Name: request.Name, Value1: result, Value2: 1})
 		defer cancel()
 		if err != nil {
 			return 0, err
 		}
-		newVal.Value = int64(result.GetResult())
+		result = addedResult.Result
 	}
 
 	//Print
-	s.infoLogger.Printf("%s - doProcessing2 start print\n", request.GetName())
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*4)
+	ctx, cancel := context.WithTimeout(parentCtx, time.Second*4)
 	defer cancel()
-	if _, err := s.processorSub.Process(ctx, newVal); err != nil {
+	if _, err := s.processorPrint.Print(ctx, &print.PrintRequest{Name: request.Name, Value: result}); err != nil {
 		return 0, err
 	}
 
-	return uint64(newVal.Value), nil
+	return result, nil
 }

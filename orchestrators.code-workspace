@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "grpc-consul"
+		},
+		{
+			"path": "grpc"
+		}
+	],
+	"settings": {}
+}

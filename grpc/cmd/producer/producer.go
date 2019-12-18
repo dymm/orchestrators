@@ -10,7 +10,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/dymm/orchestrators/grpc/pkg/messaging/process"
+	"github.com/dymm/orchestrators/grpc/cmd/orchestrator/api"
+	"github.com/dymm/orchestrators/grpc/pkg/tracer"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 )
 
 const orchestrator = "orchestrator:3000"
@@ -21,13 +23,23 @@ var infoLogger *log.Logger
 func main() {
 	infoLogger = log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.Lshortfile)
 
-	conn, err := grpc.Dial(orchestrator, grpc.WithInsecure())
+	// initialize tracer
+	actTracer, closer, err := tracer.NewTracer()
+	defer closer.Close()
+	if err != nil {
+		infoLogger.Fatalf("Failed to create the tracer: %v", err)
+	}
+
+	conn, err := grpc.Dial(orchestrator, grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(actTracer, otgrpc.LogPayloads())),
+	)
+
 	if err != nil {
 		infoLogger.Fatalf("Dial Failed: %v", err)
 	}
 	infoLogger.Println("Connected to ", orchestrator)
 	defer conn.Close()
-	processClient := process.NewProcessServiceClient(conn)
+	processClient := api.NewProcessServiceClient(conn)
 
 	for i := 10; i > 0; i-- {
 		infoLogger.Println("Starting in ", i)
@@ -39,11 +51,11 @@ func main() {
 
 	for {
 		counter = counter + 1
-		newValue := process.ProcessRequest{
+		newValue := api.ProcessRequest{
 			Name:  fmt.Sprintf("Value %d", counter),
 			Value: int64(counter % maxValue),
 		}
-		go func(val *process.ProcessRequest) {
+		go func(val *api.ProcessRequest) {
 			atomic.AddInt64(&inFligth, 1)
 			start := time.Now()
 
@@ -61,7 +73,7 @@ func main() {
 		}(&newValue)
 
 		if counter%maxValue == 0 {
-			for i := 5; i > 0; i-- {
+			for i := 10; i > 0; i-- {
 				infoLogger.Printf("%d call pending, emiting agin in %d sec", inFligth, i)
 				time.Sleep(1 * time.Second)
 			}

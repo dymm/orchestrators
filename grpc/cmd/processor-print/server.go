@@ -4,17 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dymm/orchestrators/grpc/pkg/messaging/process"
+	"github.com/dymm/orchestrators/grpc/cmd/processor-print/api"
 )
 
-const valueToAdd = 7
-
-type processServiceServer struct {
+type printServiceServer struct {
 }
 
-func (s *processServiceServer) Process(ctx context.Context, request *process.ProcessRequest) (*process.ProcessResponse, error) {
+func (s *printServiceServer) Print(ctx context.Context, req *api.PrintRequest) (*api.PrintResult, error) {
 
-	fmt.Printf("%s - value is %d\n", request.Name, request.Value)
-
-	return &process.ProcessResponse{}, nil
+	fmt.Printf("%s - processor-print : the value %s is %d\n", req.Name, req.Name, req.Value)
+	return &api.PrintResult{Result: 0}, nil
 }

@@ -31,7 +31,10 @@ RUN go get -u github.com/golang/protobuf/protoc-gen-go
 COPY . .
 
 # Create the gRPC sources
-RUN protoc -I pkg/messaging/process --go_out=plugins=grpc:pkg/messaging/process pkg/messaging/process/*.proto
+RUN protoc -I cmd/orchestrator/api --go_out=plugins=grpc:cmd/orchestrator/api cmd/orchestrator/api/*.proto
+RUN protoc -I cmd/processor-add/api --go_out=plugins=grpc:cmd/processor-add/api cmd/processor-add/api/*.proto
+RUN protoc -I cmd/processor-sub/api --go_out=plugins=grpc:cmd/processor-sub/api cmd/processor-sub/api/*.proto
+RUN protoc -I cmd/processor-print/api --go_out=plugins=grpc:cmd/processor-print/api cmd/processor-print/api/*.proto
 
 # Build the Go apps
 RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/orchestrator \

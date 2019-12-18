@@ -1,22 +1,37 @@
 version: '3'
 services:
+
+  jaegertracing:
+    image: jaegertracing/all-in-one:latest
+    restart: always
+    ports:
+      - "10000:16686"
+      - "6831:6831/udp"
+    networks:
+      test-net:
+
   orchestrator:
     image: grpc:latest
     restart: unless-stopped
     networks:
       test-net:
+    env_file:
+      - ./jaeger.env
     environment:
       - PROGRAM=orchestrator
     depends_on:
       - processor-add
       - processor-sub
       - processor-print
+      - jaegertracing
       
   processor-add:
     image: grpc:latest
     restart: unless-stopped
     networks:
       test-net:
+    env_file:
+      - ./jaeger.env
     environment:
       - PROGRAM=processor-add
   
@@ -25,6 +40,8 @@ services:
     restart: unless-stopped
     networks:
       test-net:
+    env_file:
+      - ./jaeger.env
     environment:
       - PROGRAM=processor-sub
 
@@ -33,6 +50,8 @@ services:
     restart: unless-stopped
     networks:
       test-net:
+    env_file:
+      - ./jaeger.env
     environment:
       - PROGRAM=processor-print
 
@@ -41,6 +60,8 @@ services:
     restart: unless-stopped
     networks:
       test-net:
+    env_file:
+      - ./jaeger.env
     environment:
       - PROGRAM=producer
     depends_on:
@@ -48,5 +69,9 @@ services:
       - processor-add
       - processor-sub
       - processor-print
+
+volumes:
+  db-data:
+
 networks:
   test-net:
